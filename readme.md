@@ -1,7 +1,7 @@
 # Corounit
 Junit Test Engine for suspendable tests  
 Corounit can run thousands test cases concurrently using small amount of threads.  
-[![Maven Central](https://img.shields.io/maven-central/v/ru.fix/corounit.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22ru.fix%22)
+[![Maven Central](https://img.shields.io/maven-central/v/ru.fix/corounit-engine.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22ru.fix%22)
 
 
 Standard JUnit test engine execute test classes and their methods within classical Threads. 
