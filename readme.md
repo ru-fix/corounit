@@ -1,12 +1,15 @@
 # Corounit
-Junit Test Engine for suspendable tests
-
+Junit Test Engine for suspendable tests  
+Corounit can run thousands test cases concurrently using small amount of threads.  
 [![Maven Central](https://img.shields.io/maven-central/v/ru.fix/corounit.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22ru.fix%22)
 
-Corounit can run thousands test classes and methods concurrently using small fixed size thread pool.  
 
-Standard JUnit test engine can be configured to use Thread per Method approach.
-https://junit.org/junit5/docs/snapshot/user-guide/#writing-tests-parallel-execution
+Standard JUnit test engine execute test classes and their methods within classical Threads. 
+In order to improve testing phase you JUnit engine can be configured to run test clasess in parallel in different threads.
+Or even run test methods of same test class in different threads.
+See https://junit.org/junit5/docs/snapshot/user-guide/#writing-tests-parallel-execution
+
+Given this configuration JUnit Test Engine will use thread pool of size 4 and run all test classes and test methods in parallel.
 
 ```properties
 junit.jupiter.execution.parallel.enabled=true
@@ -48,8 +51,12 @@ class LongRunningTest {
     ...
 }
 ```
+![](docs/thread-test.png?raw=true)
 
 Corounit coroutines approach
+It is common for integration test to spent most of the time waiting for server  response. 
+With Kotlin coroutines it is possible do not waste thread resources on waiting. 
+This way we can start thousands of tests simultaneously without OutOfMemoryException.      
 ```properties
 corounit.execution.parallelism=4
 ```
@@ -84,3 +91,5 @@ class LongRunningTest {
 }
 ```  
 
+## Allure
+Corounit provides allure (http://allure.qatools.ru/) reporting integration.  
