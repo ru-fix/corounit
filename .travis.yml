@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - jdk11
+  - openjdk11
 cache:
   directories:
     - "$HOME/.gradle"
