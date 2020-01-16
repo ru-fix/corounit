@@ -94,3 +94,8 @@ class LongRunningTest {
 
 ## Allure integration
 Corounit provides allure (http://allure.qatools.ru/) reporting integration.  
+
+Add `allure.properties` file in `src/test/resources` directory.
+```properties
+allure.results.directory=build/allure-results
+```
