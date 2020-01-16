@@ -96,6 +96,17 @@ subprojects {
         dependsOn(dokkaTask)
     }
 
+    configure<NexusPublishExtension> {
+        repositories {
+            sonatype {
+                username.set("$repositoryUser")
+                password.set("$repositoryPassword")
+                useStaging.set(true)
+            }
+        }
+        clientTimeout.set(java.time.Duration.of(3, java.time.temporal.ChronoUnit.MINUTES))
+    }
+
     project.afterEvaluate {
         publishing {
             repositories {
@@ -119,8 +130,8 @@ subprojects {
 
                     pom {
                         name.set("${project.group}:${project.name}")
-                        description.set("{{project}} {{description}}")
-                        url.set("https://github.com/ru-fix/{{project}}")
+                        description.set("https://github.com/ru-fix/${rootProject.name}")
+                        url.set("https://github.com/ru-fix/${rootProject.name}")
                         licenses {
                             license {
                                 name.set("The Apache License, Version 2.0")
@@ -129,15 +140,15 @@ subprojects {
                         }
                         developers {
                             developer {
-                                id.set("swarmshine")
-                                name.set("Kamil Asfandiyarov")
-                                url.set("https://github.com/swarmshine")
+                                id.set("JFix Team")
+                                name.set("JFix Team")
+                                url.set("https://github.com/ru-fix/")
                             }
                         }
                         scm {
-                            url.set("https://github.com/ru-fix/{{project}}")
-                            connection.set("https://github.com/ru-fix/{{project}}.git")
-                            developerConnection.set("https://github.com/ru-fix/{{project}}.git")
+                            url.set("https://github.com/ru-fix/${rootProject.name}")
+                            connection.set("https://github.com/ru-fix/${rootProject.name}.git")
+                            developerConnection.set("https://github.com/ru-fix/${rootProject.name}.git")
                         }
                     }
                 }
