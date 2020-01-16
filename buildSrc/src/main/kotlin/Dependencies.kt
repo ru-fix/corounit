@@ -21,6 +21,8 @@ object Libs {
     const val gradle_release_plugin = "ru.fix:gradle-release-plugin:${Vers.gradle_release_plugin}"
     const val dokka_gradle_plugin = "org.jetbrains.dokka:dokka-gradle-plugin:${Vers.dokkav}"
     const val asciidoctor = "org.asciidoctor:asciidoctor-gradle-plugin:${Vers.asciidoctor}"
+    const val nexus_staging_plugin = "io.codearte.nexus-staging"
+    const val nexus_publish_plugin = "de.marcphilipp.nexus-publish"
 
     //Dependencies
     const val kotlin_stdlib = "org.jetbrains.kotlin:kotlin-stdlib:${Vers.kotlin}"
