@@ -15,7 +15,17 @@ import kotlin.coroutines.coroutineContext
 
 
 object ContextStepper {
-    val clock = Clock.systemUTC()
+    private val clock = Clock.systemUTC()
+    private val threadLocalContext = ThreadLocal<AllureContext>()
+
+    suspend fun contextFromCoroutine() = coroutineContext[AllureContext.Key]!!
+
+    suspend fun contextToThreadLocal(){
+        val context = coroutineContext[AllureContext.Key]!!
+        threadLocalContext.set(context)
+    }
+
+    fun contextFromThreadLocal(): AllureContext = threadLocalContext.get()!!
 
     suspend fun step(name: String, stepBody: suspend CoroutineScope.() -> Unit) {
         val parentContext = coroutineContext[AllureContext.Key]!!
@@ -36,6 +46,16 @@ object ContextStepper {
     }
 
     suspend fun attachment(name: String, body: String){
+        val parentContext = coroutineContext[AllureContext.Key]!!
+        attachment(name, body, parentContext)
+    }
+    //TODO: make methods that adds or changes StepResult synced
+    fun threadLocalAttachment(name: String, body: String){
+        val parentContext = threadLocalContext.get()!!
+        attachment(name, body, parentContext)
+    }
+
+    private fun attachment(name: String, body: String, context: AllureContext){
         val source = UUID.randomUUID().toString() + AllureConstants.ATTACHMENT_FILE_SUFFIX + ".txt"
         AllureWriter.write(source, ByteArrayInputStream(body.toByteArray()))
 
@@ -43,9 +63,7 @@ object ContextStepper {
                 .setName(name)
                 .setType("text/plain")
                 .setSource(source)
-
-        val parentContext = coroutineContext[AllureContext.Key]!!
-        parentContext.step.attachments.add(attach)
+        context.step.attachments.add(attach)
     }
 
     data class StepExecution(val stepResult: StepResult, val stepContext: CoroutineContext)
@@ -80,6 +98,7 @@ object ContextStepper {
         }
         stage = Stage.FINISHED
     }
+
 }
 
 
