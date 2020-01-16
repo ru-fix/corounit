@@ -148,6 +148,8 @@ class CorounitTestEngine : TestEngine {
 
         runBlockingInPool(parallelism) {
 
+            //TODO: implement support for @BeforeAll and @AfterAll
+
             suspend fun execute(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Exception? {
                 request.engineExecutionListener.executionStarted(descriptor)
                 try {
