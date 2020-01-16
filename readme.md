@@ -53,7 +53,7 @@ class LongRunningTest {
 ```
 ![](docs/thread-test.png?raw=true)
 
-Corounit coroutines approach
+## Corounit coroutines approach
 It is common for integration test to spent most of the time waiting for server  response. 
 With Kotlin coroutines it is possible do not waste thread resources on waiting. 
 This way we can start thousands of tests simultaneously without OutOfMemoryException.      
