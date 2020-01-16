@@ -1,28 +1,56 @@
 import org.asciidoctor.gradle.AsciidoctorTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.net.URI
-
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
 buildscript {
     repositories {
-        mavenLocal()
+        jcenter()
         mavenCentral()
+        mavenLocal()
     }
     dependencies {
-        classpath(Libs.gradle_release_plugin)
-        classpath(Libs.asciidoctor)
+        classpath(Libs.kotlin_stdlib)
+        classpath(Libs.kotlin_jdk8)
+        classpath(Libs.kotlin_reflect)
+
+        classpath(Libs.gradle_release_plugin){
+            exclude("org.jetbrains.kotlin", "kotlin-stdlib")
+        }
+        classpath(Libs.dokka_gradle_plugin){
+            exclude("org.jetbrains.kotlin", "kotlin-stdlib")
+        }
+
     }
 }
 
-val repositoryUser: String? by project
-val repositoryPassword: String? by project
-val repositoryUrl: String? by project
+
+/**
+ * Project configuration by properties and environment
+ */
+fun envConfig() = object : ReadOnlyProperty<Any?, String?> {
+    override fun getValue(thisRef: Any?, property: KProperty<*>): String? =
+            if (ext.has(property.name)) {
+                ext[property.name] as? String
+            } else {
+                System.getenv(property.name)
+            }
+}
+
+val repositoryUser by envConfig()
+val repositoryPassword by envConfig()
+val repositoryUrl by envConfig()
+val signingKeyId by envConfig()
+val signingPassword by envConfig()
+val signingSecretKeyRingFile by envConfig()
+
 
 plugins {
-    base
-    kotlin("jvm") version Vers.kotlin apply false
+    kotlin("jvm") version "${Vers.kotlin}" apply false
+    signing
     `maven-publish`
     id("org.asciidoctor.convert") version Vers.asciidoctor
 }
@@ -36,55 +64,110 @@ subprojects {
 
     apply {
         plugin("maven-publish")
+        plugin("signing")
+        plugin("java")
+        plugin("org.jetbrains.dokka")
     }
 
     repositories {
         mavenLocal()
-        mavenCentral()
         jcenter()
-        maven(url = "https://repo.spring.io/milestone/")
-        maven(url = "http://artifactory.vasp/artifactory/libs-release/")
+        mavenCentral()
+        if(!repositoryUrl.isNullOrEmpty()){
+            maven(url=repositoryUrl.toString())
+        }
+    }
+
+    val sourcesJar by tasks.creating(Jar::class) {
+        classifier = "sources"
+        from("src/main/java")
+        from("src/main/kotlin")
+    }
+
+    val dokkaTask by tasks.creating(DokkaTask::class){
+        outputFormat = "javadoc"
+        outputDirectory = "$buildDir/dokka"
+    }
+
+    val dokkaJar by tasks.creating(Jar::class) {
+        classifier = "javadoc"
+
+        from(dokkaTask.outputDirectory)
+        dependsOn(dokkaTask)
     }
 
     project.afterEvaluate {
         publishing {
-            publications {
-                if (components.names.contains("java")) {
-                    logger.info("Register java artifact for project: ${project.name}")
-
-                    val sourcesJar by tasks.creating(Jar::class) {
-                        classifier = "sources"
-                        from("src/main/java")
-                        from("src/main/kotlin")
-                    }
-
-                    register("${project.name}-mvnPublication", MavenPublication::class) {
-                        from(components["java"])
-                        artifact(sourcesJar)
+            repositories {
+                maven {
+                    url = uri("$repositoryUrl")
+                    if (url.scheme.startsWith("http", true)) {
+                        credentials {
+                            username = "$repositoryUser"
+                            password = "$repositoryPassword"
+                        }
                     }
                 }
             }
 
-            repositories {
-                maven {
-                    credentials {
-                        username = "$repositoryUser"
-                        password = "$repositoryPassword"
-                    }
+            publications {
+                register("maven", MavenPublication::class) {
+                    from(components["java"])
 
-                    name = "repo"
-                    url = URI("$repositoryUrl")
+                    artifact(sourcesJar)
+                    artifact(dokkaJar)
+
+                    pom {
+                        name.set("${project.group}:${project.name}")
+                        description.set("{{project}} {{description}}")
+                        url.set("https://github.com/ru-fix/{{project}}")
+                        licenses {
+                            license {
+                                name.set("The Apache License, Version 2.0")
+                                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                            }
+                        }
+                        developers {
+                            developer {
+                                id.set("swarmshine")
+                                name.set("Kamil Asfandiyarov")
+                                url.set("https://github.com/swarmshine")
+                            }
+                        }
+                        scm {
+                            url.set("https://github.com/ru-fix/{{project}}")
+                            connection.set("https://github.com/ru-fix/{{project}}.git")
+                            developerConnection.set("https://github.com/ru-fix/{{project}}.git")
+                        }
+                    }
                 }
             }
         }
     }
 
+    configure<SigningExtension> {
+
+        if (!signingKeyId.isNullOrEmpty()) {
+            project.ext["signing.keyId"] = signingKeyId
+            project.ext["signing.password"] = signingPassword
+            project.ext["signing.secretKeyRingFile"] = signingSecretKeyRingFile
+
+            logger.info("Signing key id provided. Sign artifacts for $project.")
+
+            isRequired = true
+        } else {
+            logger.warn("${project.name}: Signing key not provided. Disable signing for  $project.")
+            isRequired = false
+        }
+
+        sign(publishing.publications)
+    }
+
     tasks {
         withType<KotlinCompile> {
-            kotlinOptions {
-                jvmTarget = "1.8"
-            }
+            kotlinOptions.jvmTarget = "1.8"
         }
+
         withType<Test> {
             useJUnitPlatform()
 
@@ -96,21 +179,18 @@ subprojects {
                 exceptionFormat = TestExceptionFormat.FULL
             }
         }
-    }
-}
-
-tasks {
-    withType<AsciidoctorTask> {
-        sourceDir = project.file("asciidoc")
-        resources(closureOf<CopySpec> {
-            from("asciidoc")
-            include("**/*.png")
-        })
-        doLast {
-            copy {
-                from(outputDir.resolve("html5"))
-                into(project.file("docs"))
-                include("**/*.html", "**/*.png")
+        withType<AsciidoctorTask> {
+            sourceDir = project.file("asciidoc")
+            resources(closureOf<CopySpec> {
+                from("asciidoc")
+                include("**/*.png")
+            })
+            doLast {
+                copy {
+                    from(outputDir.resolve("html5"))
+                    into(project.file("docs"))
+                    include("**/*.html", "**/*.png")
+                }
             }
         }
     }

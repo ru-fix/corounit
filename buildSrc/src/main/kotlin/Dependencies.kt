@@ -7,7 +7,6 @@ object Vers {
     //Dependencies
     const val kotlin = "1.3.61"
     const val kotlin_coroutines = "1.3.3"
-
     const val junit = "5.5.2"
 
     const val log4j =  "2.12.0"
@@ -30,9 +29,9 @@ object Libs {
     const val kotlinx_coroutines_core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Vers.kotlin_coroutines}"
 
 
+    const val mu_kotlin_logging = "io.github.microutils:kotlin-logging:1.7.6"
     const val log4j_core = "org.apache.logging.log4j:log4j-core:${Vers.log4j}"
     const val slf4j_over_log4j = "org.apache.logging.log4j:log4j-slf4j-impl:${Vers.log4j}"
-    const val mu_kotlin_logging = "io.github.microutils:kotlin-logging:1.7.6"
 
     //1.9.3 has a bug
     //https://github.com/mockk/mockk/issues/280
@@ -47,10 +46,6 @@ object Libs {
 
     const val allure_model = "io.qameta.allure:allure-model:${Vers.allure_junit5}"
     const val allure_java_commons = "io.qameta.allure:allure-java-commons:${Vers.allure_junit5}"
-
-
-    const val aspectjweaver = "org.aspectj:aspectjweaver:${Vers.aspectj}"
-    const val aspectjrt = "org.aspectj:aspectjrt:${Vers.aspectj}"
 
     const val bytebuddy = "net.bytebuddy:byte-buddy:1.10.6"
 
