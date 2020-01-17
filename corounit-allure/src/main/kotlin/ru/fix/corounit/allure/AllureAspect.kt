@@ -4,8 +4,10 @@ import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.implementation.bind.annotation.Morph
 import net.bytebuddy.matcher.ElementMatchers
+import kotlin.reflect.KClass
 
 object AllureAspect {
+    fun newAspectedInstanceViaSubtyping(clazz: KClass<*>): Any? = newAspectedInstanceViaSubtyping(clazz.java)
     fun newAspectedInstanceViaSubtyping(clazz: Class<*>): Any? {
         return ByteBuddy()
                 .subclass(clazz)
