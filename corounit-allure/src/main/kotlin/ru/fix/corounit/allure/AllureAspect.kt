@@ -7,8 +7,8 @@ import net.bytebuddy.matcher.ElementMatchers
 import kotlin.reflect.KClass
 
 object AllureAspect {
-    fun newAspectedInstanceViaSubtyping(clazz: KClass<*>): Any? = newAspectedInstanceViaSubtyping(clazz.java)
-    fun newAspectedInstanceViaSubtyping(clazz: Class<*>): Any? {
+    fun <T: Any> newAspectedInstanceViaSubtyping(clazz: KClass<T>): T = newAspectedInstanceViaSubtyping(clazz.java)
+    fun <T: Any> newAspectedInstanceViaSubtyping(clazz: Class<T>): T {
         return ByteBuddy()
                 .subclass(clazz)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Any::class.java)))
