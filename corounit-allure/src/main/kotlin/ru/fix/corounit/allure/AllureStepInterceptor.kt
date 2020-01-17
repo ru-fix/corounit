@@ -6,6 +6,8 @@ import java.lang.reflect.Method
 import java.util.concurrent.Callable
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
+import kotlin.reflect.KParameter
+import kotlin.reflect.jvm.kotlinFunction
 
 private val log = KotlinLogging.logger { }
 
@@ -23,7 +25,20 @@ class AllureStepInterceptor {
                     ?: return interceptedInvocation.invoke(args)
 
             val parentStep = AllureStep.fromCoroutineContext(continuation.context)
-            val childCoroutineContext = parentStep.startChildStepWithCoroutineContext(method.name, continuation.context)
+
+            val parameterNames = method.kotlinFunction?.parameters
+                    ?.filter { it.kind == KParameter.Kind.VALUE }
+                    ?.map { it.name }
+                    ?: method.parameters.map { it.name }
+
+            val title = "" +
+                    method.name + " " +
+                    parameterNames
+                            .zip(args)
+                            .map { (name, arg) -> "$name: $arg" }
+                            .joinToString(prefix = "(", separator = ", ", postfix = ")")
+
+            val childCoroutineContext = parentStep.startChildStepWithCoroutineContext(title, continuation.context)
             val childStep = AllureStep.fromCoroutineContext(childCoroutineContext)
 
             val newArgs = args.copyOf()

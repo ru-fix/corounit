@@ -14,6 +14,7 @@ import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.javaMethod
@@ -46,6 +47,16 @@ class CorounitTestEngine : TestEngine {
             return currentContext
         }
 
+        override suspend fun beforeAll(globalContext: CoroutineContext): CoroutineContext {
+            return dispatch(globalContext) { beforeAll(it) }
+        }
+
+        suspend fun afterAll() {
+            dispatch(coroutineContext) {
+                afterAll()
+                it
+            }
+        }
 
         override suspend fun beforeTestClass(testClassContext: CoroutineContext): CoroutineContext {
             return dispatch(testClassContext) { beforeTestClass(it) }
@@ -56,7 +67,6 @@ class CorounitTestEngine : TestEngine {
                 afterTestClass(it)
                 it
             }
-
         }
 
         override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
@@ -148,50 +158,55 @@ class CorounitTestEngine : TestEngine {
 
         runBlockingInPool(parallelism) {
 
-            //TODO: implement support for @BeforeAll and @AfterAll
+            val globalContext = pluginDispatcher.beforeAll(coroutineContext)
+            withContext(globalContext) {
 
-            suspend fun execute(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Exception? {
-                request.engineExecutionListener.executionStarted(descriptor)
-                try {
-                    supervisorScope {
-                        block()
+                //TODO: implement support for @BeforeAll and @AfterAll
+
+                suspend fun execute(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Exception? {
+                    request.engineExecutionListener.executionStarted(descriptor)
+                    try {
+                        supervisorScope {
+                            block()
+                        }
+                        request.engineExecutionListener.executionFinished(descriptor, TestExecutionResult.successful())
+                        return null
+                    } catch (exc: Exception) {
+                        request.engineExecutionListener.executionFinished(descriptor, TestExecutionResult.failed(exc))
+                        return exc
                     }
-                    request.engineExecutionListener.executionFinished(descriptor, TestExecutionResult.successful())
-                    return null
-                } catch (exc: Exception) {
-                    request.engineExecutionListener.executionFinished(descriptor, TestExecutionResult.failed(exc))
-                    return exc
                 }
-            }
 
-            val execDesc = request.rootTestDescriptor as CorounitExecutionDescriptor
-            execute(execDesc) {
-                for (classDesc in execDesc.children.mapNotNull { it as? CorounitClassDescriptior }) {
-                    launch {
-                        val testInstance = classDesc.clazz.createInstance()
-                        val classContext = CorounitContext()
-                        classContext[CorounitContext.TestClass] = classDesc.clazz
-                        val pluginsClassContext = pluginDispatcher.beforeTestClass(classContext)
-                        execute(classDesc) {
+                val execDesc = request.rootTestDescriptor as CorounitExecutionDescriptor
+                execute(execDesc) {
+                    for (classDesc in execDesc.children.mapNotNull { it as? CorounitClassDescriptior }) {
+                        launch {
+                            val testInstance = classDesc.clazz.createInstance()
+                            val classContext = CorounitContext()
+                            classContext[CorounitContext.TestClass] = classDesc.clazz
+                            val pluginsClassContext = pluginDispatcher.beforeTestClass(classContext)
+                            execute(classDesc) {
 
-                            for (methodDesc in classDesc.children.mapNotNull { it as? CorounitMethodDescriptior }) {
-                                val methodContext = CorounitContext()
-                                methodContext[CorounitContext.TestMethod] = methodDesc.method
+                                for (methodDesc in classDesc.children.mapNotNull { it as? CorounitMethodDescriptior }) {
+                                    val methodContext = CorounitContext()
+                                    methodContext[CorounitContext.TestMethod] = methodDesc.method
 
-                                val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)
+                                    val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)
 
-                                launch(pluginsMethodContext) {
+                                    launch(pluginsMethodContext) {
 
-                                    val exc = execute(methodDesc) {
-                                        methodDesc.method.callSuspend(testInstance)
+                                        val exc = execute(methodDesc) {
+                                            methodDesc.method.callSuspend(testInstance)
+                                        }
+                                        pluginDispatcher.afterTestMethod(pluginsMethodContext, exc)
                                     }
-                                    pluginDispatcher.afterTestMethod(pluginsMethodContext, exc)
                                 }
                             }
+                            pluginDispatcher.afterTestClass(pluginsClassContext)
                         }
-                        pluginDispatcher.afterTestClass(pluginsClassContext)
                     }
                 }
+                pluginDispatcher.afterAll()
             }
         }
     }
