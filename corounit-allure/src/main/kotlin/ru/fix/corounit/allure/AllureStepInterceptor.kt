@@ -37,11 +37,11 @@ class AllureStepInterceptor {
 
             try {
                 val result = interceptedInvocation.invoke(newArgs)
-                childStep.stop(exc = null)
+                childStep.stop(thr = null)
                 return result
-            } catch (exc: Exception) {
-                childStep.stop(exc)
-                throw exc
+            } catch (thr: Throwable) {
+                childStep.stop(thr)
+                throw thr
             }
         }
     }

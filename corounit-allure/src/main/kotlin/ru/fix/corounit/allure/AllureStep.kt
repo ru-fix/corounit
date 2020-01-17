@@ -43,7 +43,7 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
 
         fun fromThreadLocal(): AllureStep = threadLocal.get()!!
 
-        suspend fun attachment(name: String, body: String){
+        suspend fun attachment(name: String, body: String) {
             fromCurrentCoroutineContext().attachment(name, body)
         }
 
@@ -59,9 +59,10 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
             withContext(childContext) {
                 stepBody()
             }
-            childContext.stop(exc = null)
-        } catch (exc: Exception) {
-            childContext.stop(exc)
+            childContext.stop(thr = null)
+        } catch (thr: Throwable) {
+            childContext.stop(thr)
+            throw thr
         }
     }
 
@@ -81,28 +82,26 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
 
     private fun createStep(name: String) =
             AllureStep().also {
-                step
-                        .setName(name)
+                it.step.setName(name)
                         .setStart(clock.millis())
             }
 
 
     @Synchronized
-    fun stop(exc: Exception?) {
+    fun stop(thr: Throwable?) {
         step.stop = clock.millis()
-        if (exc == null) {
+        if (thr == null) {
             step.status = Status.PASSED
         } else {
-            step.status = ResultsUtils.getStatus(exc).get()
-            step.statusDetails = ResultsUtils.getStatusDetails(exc).get()
+            step.status = ResultsUtils.getStatus(thr).get()
+            step.statusDetails = ResultsUtils.getStatusDetails(thr).get()
         }
         step.stage = Stage.FINISHED
     }
 
 
-
     @Synchronized
-    fun attachment(name: String, body: String){
+    fun attachment(name: String, body: String) {
         val source = UUID.randomUUID().toString() + AllureConstants.ATTACHMENT_FILE_SUFFIX + ".txt"
         AllureWriter.write(source, ByteArrayInputStream(body.toByteArray()))
 
@@ -114,5 +113,5 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
     }
 
     @Synchronized
-    fun <T> withStepResult(block: (step: StepResult)->T): T = block(step)
+    fun <T> withStepResult(block: (step: StepResult) -> T): T = block(step)
 }

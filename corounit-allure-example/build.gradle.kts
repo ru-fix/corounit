@@ -2,12 +2,7 @@
 plugins {
     java
     kotlin("jvm")
-    id("org.jetbrains.kotlin.plugin.allopen") version Vers.kotlin
     id("io.qameta.allure") version Vers.allure_plugin
-}
-
-allOpen{
-    annotation("ru.fix.corounit.allure.Steps")
 }
 
 
