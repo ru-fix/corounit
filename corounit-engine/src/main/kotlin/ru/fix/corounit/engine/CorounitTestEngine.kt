@@ -63,9 +63,9 @@ class CorounitTestEngine : TestEngine {
             return dispatch(testMethodContext) { beforeTestMethod(it) }
         }
 
-        override suspend fun afterTestMethod(testMethodContext: CoroutineContext, exc: Exception?) {
+        override suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
             dispatch(testMethodContext) {
-                afterTestMethod(it, exc)
+                afterTestMethod(it, thr)
                 it
             }
         }

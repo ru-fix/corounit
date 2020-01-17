@@ -25,14 +25,14 @@ class AllureCorounitPlugin : CorounitPlugin {
                 })
     }
 
-    override suspend fun afterTestMethod(testMethodContext: CoroutineContext, exc: Exception?) {
+    override suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
         val result = testMethodContext[TestResultContext.Key]!!.allureResult.apply {
             stop = clock.millis()
-            if (exc == null) {
+            if (thr == null) {
                 status = Status.PASSED
             } else {
-                status = ResultsUtils.getStatus(exc).get()
-                statusDetails = ResultsUtils.getStatusDetails(exc).get()
+                status = ResultsUtils.getStatus(thr).get()
+                statusDetails = ResultsUtils.getStatusDetails(thr).get()
             }
             uuid = UUID.randomUUID().toString()
             labels.add(Label()

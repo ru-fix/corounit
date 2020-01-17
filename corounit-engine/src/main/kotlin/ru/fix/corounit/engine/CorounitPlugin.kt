@@ -7,6 +7,6 @@ interface CorounitPlugin {
     suspend fun afterTestClass(testClassContext: CoroutineContext) {}
 
     suspend fun beforeTestMethod(testMethodContext: CoroutineContext) = testMethodContext
-    suspend fun afterTestMethod(testMethodContext: CoroutineContext, exc: Exception?){}
+    suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?){}
 
 }
