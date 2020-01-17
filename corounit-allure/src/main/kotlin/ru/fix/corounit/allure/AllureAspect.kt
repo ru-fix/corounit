@@ -12,7 +12,7 @@ object AllureAspect {
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Any::class.java)))
                 .intercept(MethodDelegation
                         .withDefaultConfiguration()
-                        .withBinders(Morph.Binder.install(MorphingInvocation::class.java))
+                        .withBinders(Morph.Binder.install(MorphingInterceptedInvocation::class.java))
                         .to(AllureStepInterceptor::class.java))
                 .make()
                 .load(clazz.classLoader)

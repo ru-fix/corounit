@@ -2,7 +2,6 @@ package ru.fix.corounit.allure
 
 import io.qameta.allure.model.Label
 import io.qameta.allure.model.Status
-import io.qameta.allure.model.StepResult
 import io.qameta.allure.model.TestResult
 import io.qameta.allure.util.ResultsUtils
 import kotlinx.coroutines.CoroutineName
@@ -19,7 +18,7 @@ class AllureCorounitPlugin : CorounitPlugin {
 
     override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
         return testMethodContext +
-                AllureContext(StepResult()) +
+                AllureStep() +
                 TestResultContext(TestResult().apply {
                     start = clock.millis()
                     name = CorounitContext.fromContext(testMethodContext).testMethod.name
@@ -40,7 +39,7 @@ class AllureCorounitPlugin : CorounitPlugin {
                     .setName(ResultsUtils.THREAD_LABEL_NAME)
                     .setValue(testMethodContext.get(CoroutineName)?.name ?: uuid))
 
-            val context = testMethodContext[AllureContext.Key]!!
+            val context = AllureStep.fromCoroutineContext(testMethodContext)
             populateSteps(listOf(context))
 
             steps.addAll(context.step.steps)
@@ -49,7 +48,7 @@ class AllureCorounitPlugin : CorounitPlugin {
         AllureWriter.write(result)
     }
 
-    private tailrec fun populateSteps(contexts: List<AllureContext>) {
+    private tailrec fun populateSteps(contexts: List<AllureStep>) {
         if (contexts.isEmpty()) return
         for (context in contexts) {
             context.step.steps.addAll(context.children.map { it.step })

@@ -1,5 +1,5 @@
 package ru.fix.corounit.allure
 
-interface MorphingInvocation{
+interface MorphingInterceptedInvocation{
     fun invoke(args: Array<Any?>): Any?
 }
