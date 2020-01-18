@@ -10,12 +10,18 @@ import org.junit.platform.engine.support.descriptor.MethodSource
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
+import kotlin.reflect.jvm.internal.impl.descriptors.ClassDescriptor
 import kotlin.reflect.jvm.javaMethod
 
 class CorounitExecutionDescriptor(
         uniqueId: UniqueId
 ) : AbstractTestDescriptor(uniqueId, "Corounit") {
     override fun getType(): TestDescriptor.Type = TestDescriptor.Type.CONTAINER
+
+    val classDescriptors: List<CorounitClassDescriptior>
+        get() = children.map { it as CorounitClassDescriptior }
+
+    fun addClassDescriptor(classDescr: CorounitClassDescriptior) = children.add(classDescr)
 }
 
 class CorounitClassDescriptior(
@@ -26,6 +32,11 @@ class CorounitClassDescriptior(
         ClassSource.from(clazz.java)) {
 
     override fun getType(): TestDescriptor.Type = TestDescriptor.Type.CONTAINER
+
+    val methodDescriptors: List<CorounitMethodDescriptior>
+        get() = children.map { it as CorounitMethodDescriptior }
+
+    fun addMethodDescriptor(methodDescr: CorounitMethodDescriptior) = children.add(methodDescr)
 }
 
 

@@ -8,13 +8,11 @@ import org.junit.platform.commons.support.ReflectionSupport
 import org.junit.platform.engine.*
 import org.junit.platform.engine.discovery.ClassSelector
 import org.junit.platform.engine.discovery.MethodSelector
-import java.util.*
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.Executors
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.javaMethod
@@ -23,63 +21,6 @@ import kotlin.reflect.jvm.kotlinFunction
 private val log = KotlinLogging.logger { }
 
 class CorounitTestEngine : TestEngine {
-
-    class PluginDispatcher : CorounitPlugin {
-        private val plugins = ServiceLoader.load(CorounitPlugin::class.java)
-        private suspend fun dispatch(
-                context: CoroutineContext,
-                action: suspend CorounitPlugin.(CoroutineContext) -> CoroutineContext): CoroutineContext {
-
-            var currentContext = context
-            for (plugin in plugins) {
-                try {
-                    currentContext = plugin.action(currentContext)
-                } catch (exc: Exception) {
-                    log.error(exc) {
-                        """
-                        Failed to dispatch plugin event.
-                        Plugin class: ${plugin::class.java}.
-                        Plugin: $plugin
-                        """.trimIndent()
-                    }
-                }
-            }
-            return currentContext
-        }
-
-        override suspend fun beforeAll(globalContext: CoroutineContext): CoroutineContext {
-            return dispatch(globalContext) { beforeAll(it) }
-        }
-
-        suspend fun afterAll() {
-            dispatch(coroutineContext) {
-                afterAll()
-                it
-            }
-        }
-
-        override suspend fun beforeTestClass(testClassContext: CoroutineContext): CoroutineContext {
-            return dispatch(testClassContext) { beforeTestClass(it) }
-        }
-
-        override suspend fun afterTestClass(testClassContext: CoroutineContext) {
-            dispatch(testClassContext) {
-                afterTestClass(it)
-                it
-            }
-        }
-
-        override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
-            return dispatch(testMethodContext) { beforeTestMethod(it) }
-        }
-
-        override suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
-            dispatch(testMethodContext) {
-                afterTestMethod(it, thr)
-                it
-            }
-        }
-    }
 
     override fun getId(): String = "corounit"
 
@@ -153,7 +94,9 @@ class CorounitTestEngine : TestEngine {
 
         log.debug { "Corounit uses parallelism level: $parallelism" }
 
-        val pluginDispatcher = PluginDispatcher()
+        val execDesc = request.rootTestDescriptor as CorounitExecutionDescriptor
+
+        val pluginDispatcher = PluginDispatcher(execDesc)
 
 
         runBlockingInPool(parallelism) {
@@ -163,7 +106,7 @@ class CorounitTestEngine : TestEngine {
 
                 //TODO: implement support for @BeforeAll and @AfterAll
 
-                suspend fun execute(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Exception? {
+                suspend fun execute(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Throwable? {
                     request.engineExecutionListener.executionStarted(descriptor)
                     try {
                         supervisorScope {
@@ -171,13 +114,13 @@ class CorounitTestEngine : TestEngine {
                         }
                         request.engineExecutionListener.executionFinished(descriptor, TestExecutionResult.successful())
                         return null
-                    } catch (exc: Exception) {
-                        request.engineExecutionListener.executionFinished(descriptor, TestExecutionResult.failed(exc))
-                        return exc
+                    } catch (thr: Throwable) {
+                        request.engineExecutionListener.executionFinished(descriptor, TestExecutionResult.failed(thr))
+                        return thr
                     }
                 }
 
-                val execDesc = request.rootTestDescriptor as CorounitExecutionDescriptor
+
                 execute(execDesc) {
                     for (classDesc in execDesc.children.mapNotNull { it as? CorounitClassDescriptior }) {
                         launch {
@@ -195,10 +138,14 @@ class CorounitTestEngine : TestEngine {
 
                                     launch(pluginsMethodContext) {
 
-                                        val exc = execute(methodDesc) {
-                                            methodDesc.method.callSuspend(testInstance)
+                                        val thr = execute(methodDesc) {
+                                            try {
+                                                methodDesc.method.callSuspend(testInstance)
+                                            }catch (invocationTargetExc: InvocationTargetException){
+                                                throw invocationTargetExc.cause ?: invocationTargetExc
+                                            }
                                         }
-                                        pluginDispatcher.afterTestMethod(pluginsMethodContext, exc)
+                                        pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
                                     }
                                 }
                             }
@@ -206,7 +153,7 @@ class CorounitTestEngine : TestEngine {
                         }
                     }
                 }
-                pluginDispatcher.afterAll()
+                pluginDispatcher.afterAll(globalContext)
             }
         }
     }
