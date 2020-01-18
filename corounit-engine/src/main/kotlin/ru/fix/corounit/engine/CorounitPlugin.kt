@@ -4,8 +4,8 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
 
 interface CorounitPlugin {
-    suspend fun beforeAll(globalContext: CoroutineContext) = globalContext
-    suspend fun afterAll(globalContext: CoroutineContext) {}
+    suspend fun beforeAllTestClasses(globalContext: CoroutineContext) = globalContext
+    suspend fun afterAllTestClasses(globalContext: CoroutineContext) {}
 
     suspend fun beforeTestClass(testClassContext: CoroutineContext) = testClassContext
     suspend fun afterTestClass(testClassContext: CoroutineContext) {}

@@ -10,9 +10,9 @@ object CorounitConfig: CorounitPlugin {
 
     var beforeAllInvoked = AtomicBoolean(false)
 
-    override suspend fun beforeAll(globalContext: CoroutineContext): CoroutineContext {
+    override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
         beforeAllInvoked.set(true)
-        return super.beforeAll(globalContext)
+        return super.beforeAllTestClasses(globalContext)
     }
 
     override fun <T: Any>createTestClassInstance(testClass: KClass<T>):T {

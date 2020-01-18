@@ -4,7 +4,6 @@ import mu.KotlinLogging
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.declaredFunctions
 
@@ -72,13 +71,13 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
         return currentContext
     }
 
-    override suspend fun beforeAll(globalContext: CoroutineContext): CoroutineContext {
-        return dispatch(globalContext) { beforeAll(it) }
+    override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
+        return dispatch(globalContext) { beforeAllTestClasses(it) }
     }
 
-    override suspend fun afterAll(globalContext: CoroutineContext) {
+    override suspend fun afterAllTestClasses(globalContext: CoroutineContext) {
         dispatch(globalContext) {
-            afterAll(it)
+            afterAllTestClasses(it)
             it
         }
     }

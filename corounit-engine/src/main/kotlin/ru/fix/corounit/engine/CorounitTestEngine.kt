@@ -14,7 +14,6 @@ import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.reflect.full.callSuspend
-import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.javaMethod
 import kotlin.reflect.jvm.kotlinFunction
 
@@ -101,7 +100,7 @@ class CorounitTestEngine : TestEngine {
 
         runBlockingInPool(parallelism) {
 
-            val globalContext = pluginDispatcher.beforeAll(coroutineContext)
+            val globalContext = pluginDispatcher.beforeAllTestClasses(coroutineContext)
             withContext(globalContext) {
 
                 //TODO: implement support for @BeforeAll and @AfterAll
@@ -153,7 +152,7 @@ class CorounitTestEngine : TestEngine {
                         }
                     }
                 }
-                pluginDispatcher.afterAll(globalContext)
+                pluginDispatcher.afterAllTestClasses(globalContext)
             }
         }
     }
