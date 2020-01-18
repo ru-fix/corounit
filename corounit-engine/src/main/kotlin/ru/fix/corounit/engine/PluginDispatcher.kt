@@ -4,6 +4,9 @@ import mu.KotlinLogging
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.declaredFunctions
 
 private val log = KotlinLogging.logger { }
 
@@ -40,7 +43,12 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
                 }
 
         plugins = byServiceLoader + byConfigObjects
-        testClassInstanceCreator = plugins.find { it.abilities().contains(CorounitPlugin.Ability.CREATE_INSTANCE) }
+
+        testClassInstanceCreator = plugins.find {
+            it.javaClass.kotlin.declaredFunctions.any {
+                it.name == "createTestClassInstance"
+            }
+        }
     }
 
     private suspend fun dispatch(
@@ -99,7 +107,7 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
 
     override fun <T : Any> createTestClassInstance(testClass: KClass<T>): T {
         return testClassInstanceCreator?.createTestClassInstance(testClass)
-                ?: super.createTestClassInstance(testClass)
+                ?: testClass.createInstance()
     }
 
 

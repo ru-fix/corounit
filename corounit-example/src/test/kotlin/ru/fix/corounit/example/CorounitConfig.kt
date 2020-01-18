@@ -8,8 +8,6 @@ import kotlin.reflect.full.createInstance
 
 object CorounitConfig: CorounitPlugin {
 
-    override fun abilities() = setOf(CorounitPlugin.Ability.CREATE_INSTANCE)
-
     var beforeAllInvoked = AtomicBoolean(false)
 
     override suspend fun beforeAll(globalContext: CoroutineContext): CoroutineContext {
