@@ -124,7 +124,7 @@ class CorounitTestEngine : TestEngine {
                 execute(execDesc) {
                     for (classDesc in execDesc.children.mapNotNull { it as? CorounitClassDescriptior }) {
                         launch {
-                            val testInstance = classDesc.clazz.createInstance()
+                            val testInstance = pluginDispatcher.createTestClassInstance(classDesc.clazz)
                             val classContext = CorounitContext()
                             classContext[CorounitContext.TestClass] = classDesc.clazz
                             val pluginsClassContext = pluginDispatcher.beforeTestClass(classContext)

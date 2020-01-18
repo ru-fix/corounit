@@ -6,7 +6,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
-object CorounitConfig: ru.fix.corounit.engine.CorounitConfig {
+object CorounitConfig: CorounitPlugin {
 
     override fun abilities() = setOf(CorounitPlugin.Ability.CREATE_INSTANCE)
 
@@ -19,7 +19,9 @@ object CorounitConfig: ru.fix.corounit.engine.CorounitConfig {
 
     override fun <T: Any>createTestClassInstance(testClass: KClass<T>):T {
         val instance = testClass.createInstance()
-        instance.javaClass.getMethod("injectData").invoke("injected data")
+        if(instance is CorounitConfigTest) {
+            CorounitConfigTest::injectData.invoke(instance, "injected data")
+        }
         return instance
     }
 }

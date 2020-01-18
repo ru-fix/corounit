@@ -9,6 +9,7 @@ private val log = KotlinLogging.logger { }
 
 class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
     private val plugins: List<CorounitPlugin>
+    private val testClassInstanceCreator: CorounitPlugin?
 
     init {
         val byServiceLoader = ServiceLoader.load(CorounitPlugin::class.java)
@@ -35,10 +36,11 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
                     }
                 }
                 .mapNotNull {
-                    it.kotlin.objectInstance as? CorounitConfig
+                    it.kotlin.objectInstance as? CorounitPlugin
                 }
 
         plugins = byServiceLoader + byConfigObjects
+        testClassInstanceCreator = plugins.find { it.abilities().contains(CorounitPlugin.Ability.CREATE_INSTANCE) }
     }
 
     private suspend fun dispatch(
@@ -93,6 +95,11 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
             afterTestMethod(it, thr)
             it
         }
+    }
+
+    override fun <T : Any> createTestClassInstance(testClass: KClass<T>): T {
+        return testClassInstanceCreator?.createTestClassInstance(testClass)
+                ?: super.createTestClassInstance(testClass)
     }
 
 
