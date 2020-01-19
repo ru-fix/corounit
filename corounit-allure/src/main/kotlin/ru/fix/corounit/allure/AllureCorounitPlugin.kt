@@ -1,6 +1,7 @@
 package ru.fix.corounit.allure
 
 import io.qameta.allure.AllureResultsWriter
+import io.qameta.allure.Description
 import io.qameta.allure.model.Label
 import io.qameta.allure.model.Status
 import io.qameta.allure.model.TestResult
@@ -36,6 +37,7 @@ class AllureCorounitPlugin(
                     fullName = testMethod.name
                     testCaseId = CorounitContext.fromContext(testMethodContext).testClass.qualifiedName
                     uuid = UUID.randomUUID().toString()
+                    description = testMethod.findAnnotation<Description>()?.value
 
                     val labelsMap = (listOf(ResultsUtils.createFrameworkLabel("corounit"),
                             ResultsUtils.createPackageLabel(testClass.qualifiedName),

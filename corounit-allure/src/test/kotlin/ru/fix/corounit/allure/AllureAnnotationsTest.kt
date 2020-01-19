@@ -6,10 +6,7 @@ import io.kotlintest.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.qameta.allure.AllureResultsWriter
-import io.qameta.allure.Epic
-import io.qameta.allure.Feature
-import io.qameta.allure.Story
+import io.qameta.allure.*
 import io.qameta.allure.model.TestResult
 import io.qameta.allure.util.ResultsUtils
 import kotlinx.coroutines.runBlocking
@@ -22,6 +19,7 @@ class TestClass {
     @Feature("feature")
     @Story("story")
     @Package("my.package")
+    @Description("description")
     suspend fun testMethod() {
         (2 * 2).shouldBe(4)
     }
@@ -54,5 +52,8 @@ class AllureAnnotationsTest {
                 slot.captured.labels.any { it.name == expected.key && it.value == expected.value }.shouldBeTrue()
             }
         }
+
+        slot.captured.name.shouldBe("testMethod")
+        slot.captured.description.shouldBe("description")
     }
 }
