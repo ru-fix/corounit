@@ -1,5 +1,6 @@
 package ru.fix.corounit.allure.example.concurrent
 
+import io.qameta.allure.Feature
 import kotlinx.coroutines.delay
 import mu.KotlinLogging
 import org.junit.jupiter.api.Test
@@ -7,6 +8,7 @@ import ru.fix.corounit.allure.invoke
 
 private val log = KotlinLogging.logger { }
 
+@Feature("concurrency")
 class ConcurrentTest03 {
 
     @Test

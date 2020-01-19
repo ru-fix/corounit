@@ -1,20 +1,27 @@
 package ru.fix.corounit.allure
 
+import io.qameta.allure.AllureResultsWriter
 import io.qameta.allure.model.Label
 import io.qameta.allure.model.Status
 import io.qameta.allure.model.TestResult
+import io.qameta.allure.util.AnnotationUtils
 import io.qameta.allure.util.ResultsUtils
 import kotlinx.coroutines.CoroutineName
 import ru.fix.corounit.engine.CorounitContext
 import ru.fix.corounit.engine.CorounitPlugin
 import java.time.Clock
 import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 import kotlin.coroutines.CoroutineContext
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.jvm.javaMethod
 
 
-class AllureCorounitPlugin : CorounitPlugin {
-
-    private val clock = Clock.systemUTC()
+class AllureCorounitPlugin(
+        private val clock:Clock = Clock.systemUTC(),
+        private val writer:AllureResultsWriter = AllureWriter
+) : CorounitPlugin {
 
     override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
         val corounitContext = CorounitContext.fromContext(testMethodContext)
@@ -30,14 +37,24 @@ class AllureCorounitPlugin : CorounitPlugin {
                     testCaseId = CorounitContext.fromContext(testMethodContext).testClass.qualifiedName
                     uuid = UUID.randomUUID().toString()
 
-                    labels.addAll(listOf(
-                            ResultsUtils.createFrameworkLabel("corounit"),
+                    val labelsMap = (listOf(ResultsUtils.createFrameworkLabel("corounit"),
                             ResultsUtils.createPackageLabel(testClass.qualifiedName),
                             ResultsUtils.createTestClassLabel(testClass.qualifiedName),
                             ResultsUtils.createTestMethodLabel(testMethod.name),
-                            ResultsUtils.createSuiteLabel(testClass.qualifiedName)
-                    ))
+                            ResultsUtils.createSuiteLabel(testClass.qualifiedName)) +
+                            AnnotationUtils.getLabels(testClass.java) +
+                            AnnotationUtils.getLabels(testMethod.javaMethod))
+                            .map { it.name to it.value }
+                            .toMap(HashMap())
 
+                    (testMethod.findAnnotation<Package>()?:testClass.findAnnotation<Package>())?.let {
+                        labelsMap.put(ResultsUtils.PACKAGE_LABEL_NAME, it.name)
+                    }
+                    labels.addAll(labelsMap.map { (k,v)-> Label().setName(k).setValue(v) })
+
+
+                    links.addAll(AnnotationUtils.getLinks(testClass.java))
+                    links.addAll(AnnotationUtils.getLinks(testMethod.javaMethod))
                 })
     }
 
@@ -62,7 +79,7 @@ class AllureCorounitPlugin : CorounitPlugin {
             steps.addAll(context.step.steps)
             attachments.addAll(context.step.attachments)
         }
-        AllureWriter.write(result)
+        writer.write(result)
     }
 
     private tailrec fun populateSteps(contexts: List<AllureStep>) {

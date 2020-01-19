@@ -14,8 +14,9 @@ dependencies {
 
     api(Libs.junit_engine)
     api(Libs.junit_api)
-
     api(Libs.mu_kotlin_logging)
+    api(Libs.allure_java_commons)
+
     implementation(Libs.log4j_core)
     implementation(Libs.slf4j_over_log4j)
 

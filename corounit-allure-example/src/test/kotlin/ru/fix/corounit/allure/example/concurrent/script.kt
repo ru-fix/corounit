@@ -18,6 +18,7 @@ import ru.fix.corounit.allure.invoke
 
 private val log = KotlinLogging.logger { }
 
+@Feature("concurrency")
 class ${testClassName(suite)} {
 ${
     (1..20).map { testNum(suite, it) }.map { testNum ->
