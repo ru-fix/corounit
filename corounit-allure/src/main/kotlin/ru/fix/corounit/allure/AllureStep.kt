@@ -1,10 +1,7 @@
 package ru.fix.corounit.allure
 
 import io.qameta.allure.AllureConstants
-import io.qameta.allure.model.Attachment
-import io.qameta.allure.model.Stage
-import io.qameta.allure.model.Status
-import io.qameta.allure.model.StepResult
+import io.qameta.allure.model.*
 import io.qameta.allure.util.ResultsUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -49,17 +46,24 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
 
     }
 
-    suspend fun step(name: String, stepBody: suspend CoroutineScope.() -> Unit) {
-        val parentContext = coroutineContext[Key]!!
+    suspend fun step(name: String, success: Boolean) {
+        val parentStep = coroutineContext[Key]!!
+        val childStep = createStep(name)
+        parentStep.children.add(childStep)
+        childStep.stop(success)
+    }
 
+    suspend fun <T> step(name: String, stepBody: suspend CoroutineScope.() -> T):T {
+        val parentContext = coroutineContext[Key]!!
         val childContext = createStep(name)
         parentContext.children.add(childContext)
 
-        try {
-            withContext(childContext) {
+        return try {
+            val result = withContext(childContext) {
                 stepBody()
             }
-            childContext.stop(thr = null)
+            childContext.stop()
+            result
         } catch (thr: Throwable) {
             childContext.stop(thr)
             throw thr
@@ -86,9 +90,19 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
                         .setStart(clock.millis())
             }
 
+    @Synchronized
+    fun stop(success: Boolean, statusDetails: String? = null) {
+        step.stop = clock.millis()
+        step.status = if (success) Status.PASSED else Status.FAILED
+        if (statusDetails != null) {
+            step.statusDetails.message = statusDetails
+        }
+        step.stage = Stage.FINISHED
+    }
+
 
     @Synchronized
-    fun stop(thr: Throwable?) {
+    fun stop(thr: Throwable? = null) {
         step.stop = clock.millis()
         if (thr == null) {
             step.status = Status.PASSED

@@ -130,7 +130,7 @@ class CorounitTestEngine : TestEngine {
                             execute(classDesc) {
 
                                 for (methodDesc in classDesc.children.mapNotNull { it as? CorounitMethodDescriptior }) {
-                                    val methodContext = CorounitContext()
+                                    val methodContext = classContext.copy()
                                     methodContext[CorounitContext.TestMethod] = methodDesc.method
 
                                     val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)

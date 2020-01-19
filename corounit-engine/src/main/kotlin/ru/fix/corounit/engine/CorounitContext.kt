@@ -54,4 +54,10 @@ class CorounitContext(
         set(value) {
             this[TestClass] = value
         }
+
+    fun copy(): CorounitContext{
+        val newContext = CorounitContext()
+        newContext.data.putAll(this.data)
+        return newContext
+    }
 }

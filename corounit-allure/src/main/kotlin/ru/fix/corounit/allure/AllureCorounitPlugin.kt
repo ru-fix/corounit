@@ -17,11 +17,27 @@ class AllureCorounitPlugin : CorounitPlugin {
     private val clock = Clock.systemUTC()
 
     override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
+        val corounitContext = CorounitContext.fromContext(testMethodContext)
+        val testClass = corounitContext.testClass
+        val testMethod = corounitContext.testMethod
+
         return testMethodContext +
                 AllureStep() +
                 TestResultContext(TestResult().apply {
                     start = clock.millis()
-                    name = CorounitContext.fromContext(testMethodContext).testMethod.name
+                    name = testMethod.name
+                    fullName = testMethod.name
+                    testCaseId = CorounitContext.fromContext(testMethodContext).testClass.qualifiedName
+                    uuid = UUID.randomUUID().toString()
+
+                    labels.addAll(listOf(
+                            ResultsUtils.createFrameworkLabel("corounit"),
+                            ResultsUtils.createPackageLabel(testClass.qualifiedName),
+                            ResultsUtils.createTestClassLabel(testClass.qualifiedName),
+                            ResultsUtils.createTestMethodLabel(testMethod.name),
+                            ResultsUtils.createSuiteLabel(testClass.qualifiedName)
+                    ))
+
                 })
     }
 
@@ -34,10 +50,11 @@ class AllureCorounitPlugin : CorounitPlugin {
                 status = ResultsUtils.getStatus(thr).get()
                 statusDetails = ResultsUtils.getStatusDetails(thr).get()
             }
-            uuid = UUID.randomUUID().toString()
-            labels.add(Label()
-                    .setName(ResultsUtils.THREAD_LABEL_NAME)
-                    .setValue(testMethodContext.get(CoroutineName)?.name ?: uuid))
+
+            labels.addAll(listOf(
+                    Label().setName(ResultsUtils.THREAD_LABEL_NAME)
+                            .setValue(testMethodContext.get(CoroutineName)?.name ?: uuid)
+            ))
 
             val context = AllureStep.fromCoroutineContext(testMethodContext)
             populateSteps(listOf(context))

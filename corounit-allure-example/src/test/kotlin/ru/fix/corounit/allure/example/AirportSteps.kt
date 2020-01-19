@@ -6,7 +6,7 @@ import ru.fix.corounit.allure.invoke
 
 private val log = KotlinLogging.logger { }
 
-class AirportSteps {
+open class AirportSteps {
     suspend fun bookFlight(person: String) {
         log.info { "book flight for $person" }
 
