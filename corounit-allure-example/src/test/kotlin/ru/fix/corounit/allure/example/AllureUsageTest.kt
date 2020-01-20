@@ -15,7 +15,7 @@ private val log = KotlinLogging.logger { }
 
 class AllureUsageTest {
 
-    val airport = createStepClassInstance(AirportSteps::class)
+    val airport = createStepClassInstance<AirportSteps>()
 
     @Test
     suspend fun `suspend test`() {
