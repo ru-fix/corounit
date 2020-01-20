@@ -6,8 +6,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.junit.jupiter.api.Test
-import ru.fix.corounit.allure.AllureAspect
 import ru.fix.corounit.allure.AllureStep
+import ru.fix.corounit.allure.createStepClassInstance
 import ru.fix.corounit.allure.invoke
 
 private val log = KotlinLogging.logger { }
@@ -15,7 +15,7 @@ private val log = KotlinLogging.logger { }
 
 class AllureUsageTest {
 
-    val airport = AllureAspect.newAspectedInstanceViaSubtyping(AirportSteps::class.java) as AirportSteps
+    val airport = createStepClassInstance(AirportSteps::class)
 
     @Test
     suspend fun `suspend test`() {
