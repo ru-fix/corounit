@@ -95,6 +95,7 @@ class LongRunningTest {
 ## Plugin
 Corounit provide extension point for test execution lifecycle.  
 Create object `CorounitConfig` that implement `CorounitPlugin` interface.  
+Put this object in subpackage of any of the test classes.
 
 ```kotlin
 object CorounitConfig: CorounitPlugin {
