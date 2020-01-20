@@ -8,7 +8,8 @@ import kotlin.reflect.KClass
 
 object AllureAspect {
     fun <T: Any> newAspectedInstanceViaSubtyping(clazz: KClass<T>): T = newAspectedInstanceViaSubtyping(clazz.java)
-    fun <T: Any> newAspectedInstanceViaSubtyping(clazz: Class<T>): T {
+    fun <T: Any> newAspectedInstanceViaSubtyping(clazz: Class<T>): T = newAspectedClassViaSubtyping(clazz).getConstructor().newInstance()
+    fun <T: Any> newAspectedClassViaSubtyping(clazz: Class<T>): Class<out T> {
         return ByteBuddy()
                 .subclass(clazz)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(java.lang.Object::class.java)))
@@ -17,11 +18,8 @@ object AllureAspect {
                         .withBinders(Morph.Binder.install(MorphingInterceptedInvocation::class.java))
                         .to(AllureStepInterceptor::class.java)
                 )
-
                 .make()
                 .load(clazz.classLoader)
                 .getLoaded()
-                .getDeclaredConstructor()
-                .newInstance()
     }
 }
