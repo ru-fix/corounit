@@ -92,6 +92,22 @@ class LongRunningTest {
 }
 ```  
 
+## Plugin
+Corounit provide extension point for test execution lifecycle.  
+Create object `CorounitConfig` that implement `CorounitPlugin` interface.  
+
+```kotlin
+object CorounitConfig: CorounitPlugin {
+
+    override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
+        // do custom initialization here,
+        // like starting mock server that will be used by several different test classes        
+        return super.beforeAllTestClasses(globalContext)
+    }
+    ...
+}
+```
+
 ## Allure integration
 Corounit provides allure (http://allure.qatools.ru/) reporting integration.  
 
