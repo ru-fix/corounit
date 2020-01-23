@@ -20,6 +20,7 @@ dependencies {
     implementation(Libs.slf4j_over_log4j)
 
     testImplementation(Libs.kotlin_test)
+    testImplementation(Libs.mockk)
 }
 
 

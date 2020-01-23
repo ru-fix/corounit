@@ -98,6 +98,8 @@ Create object `CorounitConfig` that implement `CorounitPlugin` interface.
 Put this object in subpackage of any of the test classes.
 
 ```kotlin
+package base.pacakge.of.the.project
+
 object CorounitConfig: CorounitPlugin {
 
     override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
@@ -108,6 +110,33 @@ object CorounitConfig: CorounitPlugin {
     ...
 }
 ```
+## TestClass
+Methods beforeAll and afterAll do not need special annotations `@BeforeAll`, `@AfterAll`. 
+They will be invoked before and after all test methods of the test class.
+
+```kotlin
+class TestClass{
+    suspend fun beforeAll(){...}
+    suspend fun afterAll(){...}
+
+    @Test
+    suspend fun `my suspend test`(){...}   
+}
+```
+You can mark these method by annotations too.
+```kotlin
+class TestClass{
+    @BeforeAll
+    suspend fun setUp(){...}
+    @AfterAll
+    suspend fun tearDown(){...}
+
+    @Test
+    suspend fun `my suspend test`(){...}   
+}
+``` 
+
+
 
 ## Allure integration
 Corounit provides allure (http://allure.qatools.ru/) reporting integration.  

@@ -2,6 +2,8 @@ package ru.fix.corounit.engine
 
 import kotlinx.coroutines.*
 import mu.KotlinLogging
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.platform.commons.support.HierarchyTraversalMode
 import org.junit.platform.commons.support.ReflectionSupport
@@ -14,6 +16,7 @@ import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.reflect.full.callSuspend
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.javaMethod
 import kotlin.reflect.jvm.kotlinFunction
 
@@ -102,9 +105,6 @@ class CorounitTestEngine : TestEngine {
 
             val globalContext = pluginDispatcher.beforeAllTestClasses(coroutineContext)
             withContext(globalContext) {
-
-                //TODO: implement support for @BeforeAll and @AfterAll
-
                 suspend fun execute(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Throwable? {
                     request.engineExecutionListener.executionStarted(descriptor)
                     try {
@@ -129,23 +129,40 @@ class CorounitTestEngine : TestEngine {
                             val pluginsClassContext = pluginDispatcher.beforeTestClass(classContext)
                             execute(classDesc) {
 
-                                for (methodDesc in classDesc.children.mapNotNull { it as? CorounitMethodDescriptior }) {
-                                    val methodContext = classContext.copy()
-                                    methodContext[CorounitContext.TestMethod] = methodDesc.method
+                                val beforeAll = classDesc.clazz.members
+                                        .filter { it.name == "beforeAll" || it.findAnnotation<BeforeAll>() != null }
+                                        .firstOrNull { it.parameters.size == 1 && it.isSuspend }
 
-                                    val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)
 
-                                    launch(pluginsMethodContext) {
+                                val afterAll = classDesc.clazz.members
+                                        .filter { it.name == "afterAll" || it.findAnnotation<AfterAll>() != null }
+                                        .firstOrNull { it.parameters.size == 1 && it.isSuspend}
 
-                                        val thr = execute(methodDesc) {
-                                            try {
-                                                methodDesc.method.callSuspend(testInstance)
-                                            }catch (invocationTargetExc: InvocationTargetException){
-                                                throw invocationTargetExc.cause ?: invocationTargetExc
+
+                                beforeAll?.callSuspend(testInstance)
+
+                                launch {
+                                    supervisorScope {
+                                        for (methodDesc in classDesc.children.mapNotNull { it as? CorounitMethodDescriptior }) {
+                                            val methodContext = classContext.copy()
+                                            methodContext[CorounitContext.TestMethod] = methodDesc.method
+
+                                            val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)
+
+                                            launch(pluginsMethodContext) {
+
+                                                val thr = execute(methodDesc) {
+                                                    try {
+                                                        methodDesc.method.callSuspend(testInstance)
+                                                    } catch (invocationTargetExc: InvocationTargetException) {
+                                                        throw invocationTargetExc.cause ?: invocationTargetExc
+                                                    }
+                                                }
+                                                pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
                                             }
                                         }
-                                        pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
                                     }
+                                    afterAll?.callSuspend(testInstance)
                                 }
                             }
                             pluginDispatcher.afterTestClass(pluginsClassContext)
