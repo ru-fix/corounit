@@ -13,7 +13,6 @@ import ru.fix.corounit.engine.CorounitPlugin
 import java.time.Clock
 import java.util.*
 import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.javaMethod
@@ -37,6 +36,7 @@ class AllureCorounitPlugin(
                     fullName = testMethod.name
                     testCaseId = CorounitContext.fromContext(testMethodContext).testClass.qualifiedName
                     uuid = UUID.randomUUID().toString()
+                    historyId = ResultsUtils.md5("${testClass.qualifiedName}::${testMethod.name}")
                     description = testMethod.findAnnotation<Description>()?.value
 
                     val labelsMap = (listOf(ResultsUtils.createFrameworkLabel("corounit"),
