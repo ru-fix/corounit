@@ -13,6 +13,10 @@ suspend operator fun String.invoke(stepBody: suspend CoroutineScope.()->Unit) {
     AllureStep.fromCurrentCoroutineContext().step(this, stepBody)
 }
 
+suspend operator fun String.invoke(assertion: Boolean) {
+    AllureStep.fromCurrentCoroutineContext().step(this, assertion)
+}
+
 @UseExperimental(ExperimentalContracts::class)
 suspend fun <T> repeatUntilSuccess(timeout: Int = 15_000,
                                    delay: Int = 1_000,
