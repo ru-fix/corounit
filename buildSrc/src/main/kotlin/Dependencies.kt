@@ -7,14 +7,13 @@ object Vers {
     //Dependencies
     const val kotlin = "1.3.61"
     const val kotlin_coroutines = "1.3.3"
-    const val junit = "5.5.2"
+    const val junit = "5.6.0"
 
     const val log4j =  "2.12.0"
 
     const val allure_plugin = "2.8.1"
     const val allure_cli = "2.13.1"
     const val allure_junit5 = "2.13.1"
-    const val aspectj = "1.9.5"
 }
 object Libs {
     //Plugins
