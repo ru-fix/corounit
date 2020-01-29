@@ -77,9 +77,9 @@ class CorounitTestEngineTest {
 
         val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
 
-        MyTestWithoutAnnotations.before.get().shouldBe(false)
-        MyTestWithoutAnnotations.test.get().shouldBe(false)
-        MyTestWithoutAnnotations.after.get().shouldBe(false)
+        MyTestWithoutAnnotations.before.set(false)
+        MyTestWithoutAnnotations.test.set(false)
+        MyTestWithoutAnnotations.after.set(false)
 
         val executionRequest = mockk<ExecutionRequest>(relaxed = true)
         val config = mockk<ConfigurationParameters>(relaxed = true)
@@ -110,9 +110,9 @@ class CorounitTestEngineTest {
 
         val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
 
-        MyTestWithAnnotations.before.get().shouldBe(false)
-        MyTestWithAnnotations.test.get().shouldBe(false)
-        MyTestWithAnnotations.after.get().shouldBe(false)
+        MyTestWithAnnotations.before.set(false)
+        MyTestWithAnnotations.test.set(false)
+        MyTestWithAnnotations.after.set(false)
 
         val executionRequest = mockk<ExecutionRequest>(relaxed = true)
         val config = mockk<ConfigurationParameters>(relaxed = true)
