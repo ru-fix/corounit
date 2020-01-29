@@ -192,7 +192,6 @@ subprojects {
         }
         withType<Test> {
             useJUnitPlatform()
-
             maxParallelForks = 10
 
             testLogging {
