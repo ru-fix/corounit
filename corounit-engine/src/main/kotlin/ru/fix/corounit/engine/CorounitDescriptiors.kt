@@ -1,17 +1,14 @@
 package ru.fix.corounit.engine
 
 import org.junit.platform.engine.TestDescriptor
-import org.junit.platform.engine.TestSource
-import org.junit.platform.engine.TestTag
 import org.junit.platform.engine.UniqueId
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor
 import org.junit.platform.engine.support.descriptor.ClassSource
 import org.junit.platform.engine.support.descriptor.MethodSource
-import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
-import kotlin.reflect.jvm.internal.impl.descriptors.ClassDescriptor
 import kotlin.reflect.jvm.javaMethod
+import kotlin.reflect.jvm.jvmName
 
 class CorounitExecutionDescriptor(
         uniqueId: UniqueId
@@ -27,8 +24,8 @@ class CorounitExecutionDescriptor(
 class CorounitClassDescriptior(
         parentUniqueId: UniqueId,
         val clazz: KClass<*>) : AbstractTestDescriptor(
-        parentUniqueId.append("class", clazz.qualifiedName),
-        clazz.qualifiedName,
+        parentUniqueId.append("class", clazz.qualifiedName ?: clazz.jvmName),
+        clazz.qualifiedName ?: clazz.jvmName,
         ClassSource.from(clazz.java)) {
 
     override fun getType(): TestDescriptor.Type = TestDescriptor.Type.CONTAINER
