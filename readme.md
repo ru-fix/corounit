@@ -3,12 +3,13 @@ Junit Test Engine for suspendable tests
 Corounit can run thousands test cases concurrently using small amount of threads.  
 [![Maven Central](https://img.shields.io/maven-central/v/ru.fix/corounit-engine.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22ru.fix%22)
 
-* [Corounit](#corounit)
-  * [Standard JUnit Test Engine approach](#standard-junit-test-engine-approach)
-  * [Corounit Test Engine suspendable test approach](#corounit-test-engine-suspendable-test-approach)
-  * [Plugin](#plugin)
-  * [TestClass](#testclass)
-  * [Allure integration](#allure-integration)
+
+* [Standard JUnit Test Engine approach](#standard-junit-test-engine-approach)
+* [Corounit Test Engine suspendable test approach](#corounit-test-engine-suspendable-test-approach)
+* [Corounit plugins](#corounit-plugins)
+* [Test class](#test-class)
+* [JUnit friendship](#junit-friendship)
+* [Allure integration](#allure-integration)
 
 
 ## Standard JUnit Test Engine approach
