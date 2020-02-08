@@ -201,7 +201,7 @@ class CorounitTestEngineTest {
     fun `beforeAll and afterAll invoked in test suite without annotations`() {
         val executionRequest = emulateDiscoveryStepForTestClass<MyTestWithoutAnnotations>()
 
-        MyTestWithAnnotations.reset()
+        MyTestWithoutAnnotations.reset()
 
         engine.execute(executionRequest)
 
