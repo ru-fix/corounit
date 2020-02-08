@@ -18,9 +18,9 @@ class AllureUsageTest {
     val airport = createStepClassInstance<AirportSteps>()
 
     @Test
-    suspend fun `suspend test`() {
-        airport.bookFlight("Smith")
-        log.info { "Flight booked" }
+    suspend fun `person books a flight`() {
+
+        airport.`book flight for person`("Smith")
 
         AllureStep.attachment("test body attachment", "data: 42")
 
