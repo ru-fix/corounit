@@ -28,6 +28,7 @@ open class TestState {
     private val counter = AtomicInteger()
 
     fun reset() {
+        counter.set(0)
         before.set(0)
         after.set(0)
         tests.clear()
@@ -254,6 +255,8 @@ class CorounitTestEngineTest {
 
     @Test
     fun `plugin object located in same package is invoked`() {
+        CorounitConfig.invokedTimes.set(0)
+
         val executionRequest = emulateDiscoveryStepForTestClass<MyTestClassForPlugin>()
         engine.execute(executionRequest)
 
