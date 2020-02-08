@@ -18,8 +18,6 @@ class AllureAspectTest {
         runBlocking (step){
             myStep.myStepMethod("foo").shouldBe("foo")
         }
-        step.children.single().let {
-            it.step.name.shouldBe("myStepMethod (myArg: foo)")
-        }
+        step.children.single().step.name.shouldBe("myStepMethod (myArg: foo)")
     }
 }
