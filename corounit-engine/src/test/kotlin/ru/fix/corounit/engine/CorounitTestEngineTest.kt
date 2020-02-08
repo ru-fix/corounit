@@ -219,6 +219,7 @@ class CorounitTestEngineTest {
     fun `first test method waits others to complete and whole suite passes without timeout`() {
         val executionRequest = emulateDiscoveryStepForTestClass<FirstMethodsWaitsOthersTest>()
 
+        FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(true)
         FirstMethodsWaitsOthersTest.reset()
 
         engine.execute(executionRequest)
