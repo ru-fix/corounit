@@ -101,10 +101,8 @@ class FirstMethodsWaitsOthersTest {
     private fun concurrentTestInvoked() {
         val amIaFirstInvokedTest = testInvoked() == 1
         if (amIaFirstInvokedTest) {
-            if(shouldFirstMethodWaitOthers.get()) {
-                while (!testState.containsAll(listOf(2, 3))) {
-                    Thread.sleep(50)
-                }
+            while (shouldFirstMethodWaitOthers.get() && !testState.containsAll(listOf(2, 3))) {
+                Thread.sleep(50)
             }
         }
     }
@@ -141,13 +139,12 @@ class MyTestForListener {
 
     @Test
     suspend fun myFailedTest() {
-        if(shouldFailedTestFail.get()) {
+        if (shouldFailedTestFail.get()) {
             throw Exception("oops")
         }
     }
 
 }
-
 
 
 class EngineExecutionListenerTrap : EngineExecutionListener {
@@ -170,7 +167,7 @@ class EngineExecutionListenerTrap : EngineExecutionListener {
     }
 }
 
-object CorounitConfig: CorounitPlugin{
+object CorounitConfig : CorounitPlugin {
     val invokedTimes = AtomicInteger()
 
 
@@ -180,9 +177,10 @@ object CorounitConfig: CorounitPlugin{
     }
 }
 
-class MyTestClassForPlugin{
+class MyTestClassForPlugin {
     @Test
-    suspend fun test(){}
+    suspend fun test() {
+    }
 
 }
 
@@ -219,10 +217,10 @@ class CorounitTestEngineTest {
     fun `first test method waits others to complete and whole suite passes without timeout`() {
         val executionRequest = emulateDiscoveryStepForTestClass<FirstMethodsWaitsOthersTest>()
 
-        FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(true)
         FirstMethodsWaitsOthersTest.reset()
-
+        FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(true)
         engine.execute(executionRequest)
+        FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(false)
 
         FirstMethodsWaitsOthersTest.beforeState.shouldBe(0)
         FirstMethodsWaitsOthersTest.testState.shouldContainAll(1, 2, 3)
@@ -239,7 +237,8 @@ class CorounitTestEngineTest {
 
         trapListener.reportedTests
                 .single {
-                    it.first.displayName.contains(MyTestForListener::mySuccessTest.name) }
+                    it.first.displayName.contains(MyTestForListener::mySuccessTest.name)
+                }
                 .second.status.shouldBe(TestExecutionResult.Status.SUCCESSFUL)
 
         trapListener.reportedTests
@@ -253,7 +252,7 @@ class CorounitTestEngineTest {
     }
 
     @Test
-    fun `plugin object located in same package is invoked`(){
+    fun `plugin object located in same package is invoked`() {
         val executionRequest = emulateDiscoveryStepForTestClass<MyTestClassForPlugin>()
         engine.execute(executionRequest)
 
