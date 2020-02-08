@@ -8,6 +8,7 @@ import io.kotlintest.matchers.types.shouldNotBeNull
 import io.kotlintest.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import mu.KotlinLogging
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -20,6 +21,8 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
+
+private val log = KotlinLogging.logger { }
 
 open class TestState {
     private val before = AtomicInteger()
@@ -104,7 +107,11 @@ class FirstMethodsWaitsOthersTest {
         val amIaFirstInvokedTest = testInvoked() == 1
         if (amIaFirstInvokedTest) {
             while (shouldFirstMethodWaitOthers.get() && !testState.containsAll(listOf(2, 3))) {
-                Thread.sleep(50)
+                Thread.sleep(100)
+                log.info {
+                    "Waiting for test state to contains [2, 3]." +
+                            " Current state: $testState"
+                }
             }
         }
     }
