@@ -1,130 +1,269 @@
 package ru.fix.corounit.engine
 
+import io.kotlintest.matchers.collections.shouldContain
+import io.kotlintest.matchers.collections.shouldContainAll
+import io.kotlintest.matchers.numerics.shouldBeGreaterThan
+import io.kotlintest.matchers.types.shouldNotBeNull
 import io.kotlintest.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.platform.engine.ConfigurationParameters
-import org.junit.platform.engine.EngineDiscoveryRequest
-import org.junit.platform.engine.ExecutionRequest
-import org.junit.platform.engine.UniqueId
+import org.junit.platform.engine.*
 import org.junit.platform.engine.discovery.ClassSelector
 import org.junit.platform.engine.discovery.MethodSelector
+import org.junit.platform.engine.reporting.ReportEntry
 import java.util.*
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.CoroutineContext
 
-class MyTestWithoutAnnotations {
-    companion object {
-        val before = AtomicBoolean()
-        val after = AtomicBoolean()
-        val test = AtomicBoolean()
+open class TestState {
+    private val before = AtomicInteger()
+    private val after = AtomicInteger()
+    private val tests = ConcurrentLinkedDeque<Int>()
+    private val counter = AtomicInteger()
+
+    fun reset() {
+        before.set(0)
+        after.set(0)
+        tests.clear()
     }
 
+    fun beforeInvoked() {
+        before.set(counter.incrementAndGet())
+    }
+
+    fun testInvoked(): Int {
+        val count = counter.incrementAndGet()
+        tests.addLast(count)
+        return count
+    }
+
+    fun afterInvoked() {
+        after.set(counter.incrementAndGet())
+    }
+
+    val beforeState get() = before.get()
+    val testState get() = tests.toList()
+    val afterState get() = after.get()
+
+}
+
+class MyTestWithoutAnnotations {
+    companion object : TestState()
+
     suspend fun beforeAll() {
-        before.set(true)
+        beforeInvoked()
     }
 
     suspend fun afterAll() {
-        after.set(true)
+        afterInvoked()
     }
 
     @Test
     suspend fun myTest() {
-        test.set(true)
+        testInvoked()
     }
 }
 
 class MyTestWithAnnotations {
-    companion object {
-        val before = AtomicBoolean()
-        val after = AtomicBoolean()
-        val test = AtomicBoolean()
-    }
+    companion object : TestState()
 
     @BeforeAll
     suspend fun setUp() {
-        before.set(true)
+        beforeInvoked()
     }
 
     @AfterAll
     suspend fun tearDown() {
-        after.set(true)
+        afterInvoked()
     }
 
     @Test
     suspend fun myTest() {
-        test.set(true)
+        testInvoked()
     }
+}
+
+class FirstMethodsWaitsOthersTest {
+    companion object : TestState()
+
+    private fun concurrentTestInvoked() {
+        val amIaFirstInvokedTest = testInvoked() == 1
+        if (amIaFirstInvokedTest) {
+            while (!testState.containsAll(listOf(2, 3))) {
+                Thread.sleep(50)
+            }
+        }
+    }
+
+    @Test
+    suspend fun myTest1() {
+        concurrentTestInvoked()
+    }
+
+    @Test
+    suspend fun myTest2() {
+        concurrentTestInvoked()
+    }
+
+    @Test
+    suspend fun myTest3() {
+        concurrentTestInvoked()
+    }
+}
+
+class MyTestForListener {
+    @Test
+    suspend fun mySuccessTest() {
+    }
+
+    @Test
+    suspend fun myFailedTest() {
+        throw Exception("oops")
+    }
+
+}
+
+
+
+class EngineExecutionListenerTrap : EngineExecutionListener {
+    var reportedTests = ConcurrentLinkedDeque<Pair<TestDescriptor, TestExecutionResult>>()
+
+    override fun executionFinished(descriptor: TestDescriptor, result: TestExecutionResult) {
+        reportedTests.addLast(descriptor to result)
+    }
+
+    override fun reportingEntryPublished(p0: TestDescriptor?, p1: ReportEntry?) {
+    }
+
+    override fun executionSkipped(p0: TestDescriptor?, p1: String?) {
+    }
+
+    override fun executionStarted(p0: TestDescriptor?) {
+    }
+
+    override fun dynamicTestRegistered(p0: TestDescriptor?) {
+    }
+}
+
+object CorounitConfig: CorounitPlugin{
+    val invokedTimes = AtomicInteger()
+
+
+    override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
+        invokedTimes.incrementAndGet()
+        return super.beforeAllTestClasses(globalContext)
+    }
+}
+
+class MyTestClassForPlugin{
+    @Test
+    suspend fun test(){}
+
 }
 
 class CorounitTestEngineTest {
 
+    private val engine: CorounitTestEngine = CorounitTestEngine()
+
     @Test
-    fun `beforeAll and afterAll method invoked in test suite without annotations`() {
+    fun `beforeAll and afterAll invoked in test suite without annotations`() {
+        val executionRequest = emulateDiscoveryStepForTestClass<MyTestWithoutAnnotations>()
 
-        val engine = CorounitTestEngine()
-        val discoveryRequest = mockk<EngineDiscoveryRequest>()
-        every { discoveryRequest.getSelectorsByType(MethodSelector::class.java) } returns mutableListOf()
-
-
-        val selector = mockk<ClassSelector>()
-        every { discoveryRequest.getSelectorsByType(ClassSelector::class.java) } returns mutableListOf(selector)
-
-        every { selector.javaClass } returns MyTestWithoutAnnotations::class.java
-        every { selector.className } returns MyTestWithoutAnnotations::class.java.name
-
-        val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
-
-        MyTestWithoutAnnotations.before.set(false)
-        MyTestWithoutAnnotations.test.set(false)
-        MyTestWithoutAnnotations.after.set(false)
-
-        val executionRequest = mockk<ExecutionRequest>(relaxed = true)
-        val config = mockk<ConfigurationParameters>(relaxed = true)
-        every { executionRequest.configurationParameters } returns config
-        every { executionRequest.rootTestDescriptor } returns descriptor
-        every { executionRequest.engineExecutionListener } returns mockk(relaxed = true)
-        every { config.get(any()) } returns Optional.empty()
+        MyTestWithAnnotations.reset()
 
         engine.execute(executionRequest)
 
-        MyTestWithoutAnnotations.before.get().shouldBe(true)
-        MyTestWithoutAnnotations.test.get().shouldBe(true)
-        MyTestWithoutAnnotations.after.get().shouldBe(true)
+        MyTestWithoutAnnotations.beforeState.shouldBe(1)
+        MyTestWithoutAnnotations.testState.shouldContain(2)
+        MyTestWithoutAnnotations.afterState.shouldBe(3)
     }
 
     @Test
-    fun `beforeAll and afterAll method invoked in test suite with annotations`() {
+    fun `beforeAll and afterAll invoked in test suite with annotations`() {
+        val executionRequest = emulateDiscoveryStepForTestClass<MyTestWithAnnotations>()
 
-        val engine = CorounitTestEngine()
+        MyTestWithAnnotations.reset()
+        engine.execute(executionRequest)
+
+        MyTestWithAnnotations.beforeState.shouldBe(1)
+        MyTestWithAnnotations.testState.shouldContain(2)
+        MyTestWithAnnotations.afterState.shouldBe(3)
+    }
+
+    @Test
+    fun `first test method waits others to complete and whole suite passes without timeout`() {
+        val executionRequest = emulateDiscoveryStepForTestClass<FirstMethodsWaitsOthersTest>()
+
+        FirstMethodsWaitsOthersTest.reset()
+
+        engine.execute(executionRequest)
+
+        FirstMethodsWaitsOthersTest.beforeState.shouldBe(0)
+        FirstMethodsWaitsOthersTest.testState.shouldContainAll(1, 2, 3)
+        FirstMethodsWaitsOthersTest.afterState.shouldBe(0)
+    }
+
+    @Test
+    fun `success and failed tests reported to junit listener`() {
+        val trapListener = EngineExecutionListenerTrap()
+        val executionRequest = emulateDiscoveryStepForTestClass<MyTestForListener>(trapListener)
+
+        engine.execute(executionRequest)
+
+        trapListener.reportedTests
+                .single {
+                    it.first.displayName.contains(MyTestForListener::mySuccessTest.name) }
+                .second.status.shouldBe(TestExecutionResult.Status.SUCCESSFUL)
+
+        trapListener.reportedTests
+                .single {
+                    it.first.displayName.contains(MyTestForListener::myFailedTest.name)
+                }
+                .second.apply {
+            status.shouldBe(TestExecutionResult.Status.FAILED)
+            throwable.shouldNotBeNull()
+        }
+    }
+
+    @Test
+    fun `plugin object located in same package is invoked`(){
+        val executionRequest = emulateDiscoveryStepForTestClass<MyTestClassForPlugin>()
+        engine.execute(executionRequest)
+
+        CorounitConfig.invokedTimes.get().shouldBeGreaterThan(0)
+    }
+
+
+    private inline fun <reified T> mockDiscoveryRequest(): EngineDiscoveryRequest {
         val discoveryRequest = mockk<EngineDiscoveryRequest>()
         every { discoveryRequest.getSelectorsByType(MethodSelector::class.java) } returns mutableListOf()
 
         val selector = mockk<ClassSelector>()
         every { discoveryRequest.getSelectorsByType(ClassSelector::class.java) } returns mutableListOf(selector)
 
-        every { selector.javaClass } returns MyTestWithAnnotations::class.java
-        every { selector.className } returns MyTestWithAnnotations::class.java.name
+        every { selector.javaClass } returns T::class.java
+        every { selector.className } returns T::class.java.name
 
-        val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
+        return discoveryRequest
+    }
 
-        MyTestWithAnnotations.before.set(false)
-        MyTestWithAnnotations.test.set(false)
-        MyTestWithAnnotations.after.set(false)
-
+    private fun mockExecutionRequest(descriptor: TestDescriptor, listener: EngineExecutionListener? = null): ExecutionRequest {
         val executionRequest = mockk<ExecutionRequest>(relaxed = true)
         val config = mockk<ConfigurationParameters>(relaxed = true)
         every { executionRequest.configurationParameters } returns config
         every { executionRequest.rootTestDescriptor } returns descriptor
-        every { executionRequest.engineExecutionListener } returns mockk(relaxed = true)
+        every { executionRequest.engineExecutionListener } returns (listener ?: mockk(relaxed = true))
         every { config.get(any()) } returns Optional.empty()
+        return executionRequest
+    }
 
-        engine.execute(executionRequest)
-
-        MyTestWithAnnotations.before.get().shouldBe(true)
-        MyTestWithAnnotations.test.get().shouldBe(true)
-        MyTestWithAnnotations.after.get().shouldBe(true)
+    private inline fun <reified T> emulateDiscoveryStepForTestClass(listener: EngineExecutionListener? = null): ExecutionRequest {
+        val discoveryRequest = mockDiscoveryRequest<T>()
+        val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
+        return mockExecutionRequest(descriptor, listener)
     }
 }
