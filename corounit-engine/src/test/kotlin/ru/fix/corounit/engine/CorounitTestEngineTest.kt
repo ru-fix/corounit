@@ -16,6 +16,7 @@ import org.junit.platform.engine.discovery.MethodSelector
 import org.junit.platform.engine.reporting.ReportEntry
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
 
@@ -87,14 +88,23 @@ class MyTestWithAnnotations {
     }
 }
 
+/**
+ * This test class detected by JunitTestEngine and executed during build
+ * as separate test suite.
+ * When we use this class as a test source we enable trapping behaviour explicitly.
+ */
 class FirstMethodsWaitsOthersTest {
-    companion object : TestState()
+    companion object : TestState() {
+        val shouldFirstMethodWaitOthers = AtomicBoolean()
+    }
 
     private fun concurrentTestInvoked() {
         val amIaFirstInvokedTest = testInvoked() == 1
         if (amIaFirstInvokedTest) {
-            while (!testState.containsAll(listOf(2, 3))) {
-                Thread.sleep(50)
+            if(shouldFirstMethodWaitOthers.get()) {
+                while (!testState.containsAll(listOf(2, 3))) {
+                    Thread.sleep(50)
+                }
             }
         }
     }
@@ -115,14 +125,25 @@ class FirstMethodsWaitsOthersTest {
     }
 }
 
+/**
+ * This test class detected by JunitTestEngine and executed during build
+ * as separate test suite.
+ * When we use this class as a test source we enable trapping behaviour explicitly.
+ */
 class MyTestForListener {
+    companion object {
+        val shouldFailedTestFail = AtomicBoolean()
+    }
+
     @Test
     suspend fun mySuccessTest() {
     }
 
     @Test
     suspend fun myFailedTest() {
-        throw Exception("oops")
+        if(shouldFailedTestFail.get()) {
+            throw Exception("oops")
+        }
     }
 
 }
@@ -212,6 +233,7 @@ class CorounitTestEngineTest {
         val trapListener = EngineExecutionListenerTrap()
         val executionRequest = emulateDiscoveryStepForTestClass<MyTestForListener>(trapListener)
 
+        MyTestForListener.shouldFailedTestFail.set(true)
         engine.execute(executionRequest)
 
         trapListener.reportedTests
