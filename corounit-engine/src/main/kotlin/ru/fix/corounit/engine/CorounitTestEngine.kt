@@ -92,7 +92,7 @@ class CorounitTestEngine : TestEngine {
 
         val parallelism = request.configurationParameters.get("corounit.execution.parallelism")
                 .map { it?.toInt() }
-                .orElse(ForkJoinPool.getCommonPoolParallelism())!!
+                .orElse(Math.max(ForkJoinPool.getCommonPoolParallelism(), 2))!!
 
         log.debug { "Corounit uses parallelism level: $parallelism" }
 
