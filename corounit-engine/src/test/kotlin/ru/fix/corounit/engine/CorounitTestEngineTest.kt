@@ -1,5 +1,6 @@
 package ru.fix.corounit.engine
 
+import io.kotlintest.matchers.asClue
 import io.kotlintest.matchers.collections.shouldContain
 import io.kotlintest.matchers.collections.shouldContainAll
 import io.kotlintest.matchers.numerics.shouldBeGreaterThan
@@ -223,7 +224,7 @@ class CorounitTestEngineTest {
         FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(false)
 
         FirstMethodsWaitsOthersTest.beforeState.shouldBe(0)
-        FirstMethodsWaitsOthersTest.testState.shouldContainAll(1, 2, 3)
+        FirstMethodsWaitsOthersTest.testState.asClue { it.shouldContainAll(1, 2, 3) }
         FirstMethodsWaitsOthersTest.afterState.shouldBe(0)
     }
 
