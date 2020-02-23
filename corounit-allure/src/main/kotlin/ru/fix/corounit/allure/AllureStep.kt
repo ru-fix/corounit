@@ -43,18 +43,17 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
         suspend fun attachment(name: String, body: String) {
             fromCurrentCoroutineContext().attachment(name, body)
         }
-
     }
 
-    suspend fun step(name: String, success: Boolean) {
-        val parentStep = coroutineContext[Key]!!
+    fun step(name: String, success: Boolean) {
+        val parentStep = this
         val childStep = createStep(name)
         parentStep.children.add(childStep)
         childStep.stop(success)
     }
 
     suspend fun <T> step(name: String, stepBody: suspend CoroutineScope.() -> T):T {
-        val parentContext = coroutineContext[Key]!!
+        val parentContext = this
         val childContext = createStep(name)
         parentContext.children.add(childContext)
 
