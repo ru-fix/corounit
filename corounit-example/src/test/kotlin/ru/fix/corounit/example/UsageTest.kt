@@ -1,8 +1,5 @@
-package ru.fix.corounit.allure.example
+package ru.fix.corounit.example
 
-import io.qameta.allure.Epic
-import io.qameta.allure.Feature
-import io.qameta.allure.Story
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -19,9 +16,6 @@ class UsageTest {
         log.info { "simple suspend test" }
     }
 
-    @Feature("feature 1")
-    @Epic("epic 1")
-    @Story("story 1")
     @Test
     suspend fun `suspend test with launch`() = coroutineScope {
         launch {

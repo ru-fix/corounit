@@ -1,14 +1,13 @@
 package ru.fix.corounit.allure.example
 
 import io.kotlintest.matchers.boolean.shouldBeTrue
+import io.kotlintest.matchers.numerics.shouldBeLessThan
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.junit.jupiter.api.Test
-import ru.fix.corounit.allure.AllureStep
-import ru.fix.corounit.allure.createStepClassInstance
-import ru.fix.corounit.allure.invoke
+import ru.fix.corounit.allure.*
 
 private val log = KotlinLogging.logger { }
 
@@ -51,5 +50,17 @@ class AllureUsageTest {
                 }
             }
         }
+    }
+
+    @Test
+    suspend fun `test with parameters`() = parameterized(
+            row(1, "one"),
+            row(2, "two"),
+            row(3, "three"),
+            row(4, null)
+    ) { number, text ->
+
+        println("number $number is a $text")
+        number.shouldBeLessThan(5)
     }
 }
