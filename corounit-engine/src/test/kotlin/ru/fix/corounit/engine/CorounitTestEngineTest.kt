@@ -10,6 +10,7 @@ import io.kotlintest.matchers.types.shouldNotBeNull
 import io.kotlintest.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import mu.KotlinLogging
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -381,7 +382,15 @@ class CorounitTestEngineTest {
         every { discoveryRequest.getSelectorsByType(MethodSelector::class.java) } returns mutableListOf()
 
         val selector = mockk<ClassSelector>()
-        every { discoveryRequest.getSelectorsByType(ClassSelector::class.java) } returns mutableListOf(selector)
+
+        val selectorClass = slot<Class<DiscoverySelector>>()
+        every { discoveryRequest.getSelectorsByType<DiscoverySelector>( capture(selectorClass) ) } answers {
+            if(selectorClass.captured ==  ClassSelector::class.java){
+                mutableListOf<DiscoverySelector>(selector)
+            } else {
+                emptyList()
+            }
+        }
         every { discoveryRequest.getFiltersByType<DiscoveryFilter<*>>(any()) } returns emptyList()
 
         every { selector.javaClass } returns T::class.java
