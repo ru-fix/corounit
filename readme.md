@@ -83,6 +83,7 @@ You can use default `junit-platform.properties` file in test resources to specif
 ```properties
 # junit-platform.properties
 corounit.execution.parallelism=4
+corounit.testinstance.lifecycle.default=per_class
 ```
 
 ```kotlin
@@ -147,12 +148,19 @@ object CorounitConfig: CorounitPlugin {
 }
 ```
 ## Test class
+
+By default corounit uses new test class instance for each method invocation. 
+As JUnit does. 
+You can override this behaviour via `@TestInstance(PER_CLASS)` annotation. 
+Or use `corounit.testinstance.lifecycle.default=per_class` property.
+
 Corounit follows convention over configuration approach. 
 Methods `beforeAll` and `afterAll` do not need special annotations `@BeforeAll`, `@AfterAll`. 
 They will be invoked before and after all test methods of the test class.
 However annotations `@BeforeAll` and `@AfterAll` works just fine.
 
 ```kotlin
+@TestInstance(PER_CLASS)
 class TestClass{
     suspend fun beforeAll(){...}
     suspend fun afterAll(){...}
@@ -163,6 +171,7 @@ class TestClass{
 ```
 You can mark these method by annotations too.
 ```kotlin
+@TestInstance(PER_CLASS)
 class TestClass{
     @BeforeAll
     suspend fun setUp(){...}
@@ -173,6 +182,28 @@ class TestClass{
     suspend fun `my suspend test`(){...}   
 }
 ``` 
+
+In case of default `@TestInstance(PER_METHOD)` behaviour, 
+you have to define beforeAll and afterAll methods in companion object.
+```kotlin
+class TestClass{
+    companion object{
+        suspend fun beforeAll(){...}
+        suspend fun afterAll(){...}
+    }
+
+    @Test
+    suspend fun `my suspend test`(){...}   
+}
+``` 
+
+## Corounit Properties
+* `corounit.execution.parallelism=4` 
+ How many threads corounite engine will use to execute tests.
+* `corounit.testinstance.lifecycle.default=per_class` 
+ By default corounit will create new instance of test class for each method invocation.
+ This property changes that behaviour so corounit will create single test class instance
+ and will use same instance for all method invocation.
 
 ## JUnit friendship
 Corounit Engine will look for `suspendable` test methods marked with `@Test` annotation and run them. 

@@ -1,8 +1,10 @@
 package ru.fix.corounit.engine
 
 import io.kotlintest.matchers.asClue
+import io.kotlintest.matchers.boolean.shouldBeTrue
 import io.kotlintest.matchers.collections.shouldContain
 import io.kotlintest.matchers.collections.shouldContainAll
+import io.kotlintest.matchers.collections.shouldHaveSize
 import io.kotlintest.matchers.numerics.shouldBeGreaterThan
 import io.kotlintest.matchers.types.shouldNotBeNull
 import io.kotlintest.shouldBe
@@ -12,6 +14,8 @@ import mu.KotlinLogging
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.platform.engine.*
 import org.junit.platform.engine.discovery.ClassSelector
 import org.junit.platform.engine.discovery.MethodSelector
@@ -57,6 +61,7 @@ open class TestState {
 
 }
 
+@TestInstance(PER_CLASS)
 class MyTestWithoutAnnotations {
     companion object : TestState()
 
@@ -74,6 +79,7 @@ class MyTestWithoutAnnotations {
     }
 }
 
+@TestInstance(PER_CLASS)
 class MyTestWithAnnotations {
     companion object : TestState()
 
@@ -193,6 +199,72 @@ class MyTestClassForPlugin {
 
 }
 
+class TestClassInstancePerMethodInvocation {
+    companion object {
+        val instances = ConcurrentLinkedDeque<TestClassInstancePerMethodInvocation>()
+        val beforeAllInvoked = AtomicBoolean(false)
+        val afterAllInvoked = AtomicBoolean(false)
+        fun reset() {
+            instances.clear()
+            beforeAllInvoked.set(true)
+            afterAllInvoked.set(true)
+        }
+    }
+
+    @Test
+    suspend fun firstMethod() {
+        instances.addLast(this)
+    }
+
+    @Test
+    suspend fun secondMethod() {
+        instances.addLast(this)
+    }
+
+    fun beforeAll() {
+        beforeAllInvoked.set(true)
+    }
+
+    fun afterAll() {
+        afterAllInvoked.set(true)
+    }
+
+
+}
+
+@TestInstance(PER_CLASS)
+class TestClassInstancePerClassInvocationWithAnnotation {
+    companion object {
+        val instances = ConcurrentLinkedDeque<TestClassInstancePerClassInvocationWithAnnotation>()
+        val beforeAllInvoked = AtomicBoolean(false)
+        val afterAllInvoked = AtomicBoolean(false)
+
+        fun beforeAll() {
+            beforeAllInvoked.set(true)
+        }
+
+        fun afterAll() {
+            afterAllInvoked.set(true)
+        }
+
+        fun reset() {
+            instances.clear()
+            beforeAllInvoked.set(true)
+            afterAllInvoked.set(true)
+        }
+    }
+
+    @Test
+    suspend fun firstMethod() {
+        instances.addLast(this)
+    }
+
+    @Test
+    suspend fun secondMethod() {
+        instances.addLast(this)
+    }
+}
+
 class CorounitTestEngineTest {
 
     private val engine: CorounitTestEngine = CorounitTestEngine()
@@ -268,6 +340,39 @@ class CorounitTestEngineTest {
         engine.execute(executionRequest)
 
         CorounitConfig.invokedTimes.get().shouldBeGreaterThan(0)
+    }
+
+    @Test
+    fun `new test instance created for each method invocation by default`() {
+
+        val executionRequest = emulateDiscoveryStepForTestClass<TestClassInstancePerMethodInvocation>()
+        TestClassInstancePerMethodInvocation.reset()
+
+        engine.execute(executionRequest)
+
+        TestClassInstancePerMethodInvocation.instances.shouldHaveSize(2)
+        (TestClassInstancePerMethodInvocation.instances.first !== TestClassInstancePerMethodInvocation.instances.last)
+                .shouldBeTrue()
+
+        TestClassInstancePerMethodInvocation.beforeAllInvoked.get().shouldBeTrue()
+        TestClassInstancePerMethodInvocation.afterAllInvoked.get().shouldBeTrue()
+    }
+
+    @Test
+    fun `single instance create for all method invocation if annotation present`() {
+
+        val executionRequest = emulateDiscoveryStepForTestClass<TestClassInstancePerClassInvocationWithAnnotation>()
+        TestClassInstancePerClassInvocationWithAnnotation.reset()
+        engine.execute(executionRequest)
+
+        TestClassInstancePerClassInvocationWithAnnotation.instances.shouldHaveSize(2)
+        (TestClassInstancePerClassInvocationWithAnnotation.instances.first ===
+                TestClassInstancePerClassInvocationWithAnnotation.instances.last)
+                .shouldBeTrue()
+
+        TestClassInstancePerClassInvocationWithAnnotation.beforeAllInvoked.get().shouldBeTrue()
+        TestClassInstancePerClassInvocationWithAnnotation.afterAllInvoked.get().shouldBeTrue()
+
     }
 
 
