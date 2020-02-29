@@ -98,6 +98,7 @@ subprojects {
         outputDirectory = "$buildDir/dokka"
 
         //TODO: wait dokka support JDK11 - https://github.com/Kotlin/dokka/issues/428
+        //TODO: wait dokka support https://github.com/Kotlin/dokka/issues/294
         //TODO: wait dokka fix https://github.com/Kotlin/dokka/issues/464
         enabled = false
     }

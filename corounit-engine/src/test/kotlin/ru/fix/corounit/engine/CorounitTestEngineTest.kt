@@ -382,6 +382,7 @@ class CorounitTestEngineTest {
 
         val selector = mockk<ClassSelector>()
         every { discoveryRequest.getSelectorsByType(ClassSelector::class.java) } returns mutableListOf(selector)
+        every { discoveryRequest.getFiltersByType<DiscoveryFilter<*>>(any()) } returns emptyList()
 
         every { selector.javaClass } returns T::class.java
         every { selector.className } returns T::class.java.name

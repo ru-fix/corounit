@@ -6,12 +6,13 @@ import org.junit.jupiter.api.Test
 import org.junit.platform.commons.support.HierarchyTraversalMode
 import org.junit.platform.commons.support.ReflectionSupport
 import org.junit.platform.engine.*
-import org.junit.platform.engine.discovery.ClassSelector
-import org.junit.platform.engine.discovery.MethodSelector
+import org.junit.platform.engine.discovery.*
+import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Predicate
 import kotlin.reflect.jvm.javaMethod
 import kotlin.reflect.jvm.kotlinFunction
 
@@ -25,13 +26,27 @@ class CorounitTestEngine : TestEngine {
 
         val execDesc = CorounitExecutionDescriptor(uniqueId)
 
-        //TODO: reuse all types of selector form junit resolving engine,
-        // see org.junit.platform.engine.support.discovery.ClassContainerSelectorResolver
+        val classNameFilter = buildClassNamePredicate(request)
+        val classFilter = Predicate<Class<*>> { testClass ->
+            ReflectionSupport.findMethods(
+                    testClass,
+                    { method ->
+                        method.kotlinFunction?.isSuspend ?: false &&
+                                method.isAnnotationPresent(Test::class.java)
+                    },
+                    HierarchyTraversalMode.TOP_DOWN)
+                    .mapNotNull { it.kotlinFunction }
+                    .any()
+        }
 
         request.getSelectorsByType(MethodSelector::class.java).forEach { selector ->
-            val method = selector.javaMethod.kotlinFunction
+            val method = selector.javaMethod.kotlinFunction ?: return@forEach
 
-            if (method != null && method.isSuspend && method.javaMethod!!.isAnnotationPresent(Test::class.java)) {
+            if (!classNameFilter.test(method.javaClass.name)) {
+                return@forEach
+            }
+
+            if (method.isSuspend && method.javaMethod!!.isAnnotationPresent(Test::class.java)) {
                 val classDesc = CorounitClassDescriptior(execDesc.uniqueId, selector.javaClass.kotlin)
                 execDesc.addChild(classDesc)
 
@@ -39,12 +54,12 @@ class CorounitTestEngine : TestEngine {
             }
         }
 
-        request.getSelectorsByType(ClassSelector::class.java).forEach { selector ->
-            val classDesc = CorounitClassDescriptior(execDesc.uniqueId, selector.javaClass.kotlin)
+        fun addTestClassToDescriptor(execDesc: CorounitExecutionDescriptor, testClass: Class<*>) {
+            val classDesc = CorounitClassDescriptior(execDesc.uniqueId, testClass.kotlin)
             execDesc.addChild(classDesc)
 
             for (method in ReflectionSupport.findMethods(
-                    selector.javaClass,
+                    testClass,
                     { method ->
                         method.kotlinFunction?.isSuspend ?: false &&
                                 method.isAnnotationPresent(Test::class.java)
@@ -59,10 +74,40 @@ class CorounitTestEngine : TestEngine {
             }
         }
 
+        request.getSelectorsByType(ClassSelector::class.java).forEach { selector ->
+            val selectorClass = selector.getJavaClass()
+            if (!classNameFilter.test(selectorClass.name)) {
+                return@forEach
+            }
+            addTestClassToDescriptor(execDesc, selectorClass)
+        }
+
+        request.getSelectorsByType(ClasspathRootSelector::class.java).forEach { selector ->
+            ReflectionSupport.findAllClassesInClasspathRoot(selector.classpathRoot, classFilter, classNameFilter)
+                    .forEach { addTestClassToDescriptor(execDesc, it) }
+        }
+
+        request.getSelectorsByType(ModuleSelector::class.java).forEach { selector ->
+            ReflectionSupport.findAllClassesInModule(selector.moduleName, classFilter, classNameFilter)
+                    .forEach { addTestClassToDescriptor(execDesc, it) }
+        }
+
+        request.getSelectorsByType(PackageSelector::class.java).forEach { selector ->
+            ReflectionSupport.findAllClassesInPackage(selector.packageName, classFilter, classNameFilter)
+                    .forEach { addTestClassToDescriptor(execDesc, it) }
+        }
+
         return execDesc
     }
 
-    fun runBlockingInPool(parallelism: Int, block: suspend CoroutineScope.() -> Unit) {
+    private fun buildClassNamePredicate(request: EngineDiscoveryRequest): Predicate<String> {
+        val filters: MutableList<DiscoveryFilter<String>> = ArrayList()
+        filters.addAll(request.getFiltersByType(ClassNameFilter::class.java))
+        filters.addAll(request.getFiltersByType(PackageNameFilter::class.java))
+        return Filter.composeFilters(filters).toPredicate()
+    }
+
+    private fun runBlockingInPool(parallelism: Int, block: suspend CoroutineScope.() -> Unit) {
         val threadCounter = AtomicInteger()
         val executor = Executors.newFixedThreadPool(parallelism) { Thread(it, "corounit-${threadCounter.getAndIncrement()}") }
         try {
