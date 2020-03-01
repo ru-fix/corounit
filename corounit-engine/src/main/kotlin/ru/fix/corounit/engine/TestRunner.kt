@@ -3,9 +3,7 @@ package ru.fix.corounit.engine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD
 import org.junit.platform.engine.ConfigurationParameters
@@ -13,6 +11,7 @@ import org.junit.platform.engine.EngineExecutionListener
 import org.junit.platform.engine.TestDescriptor
 import org.junit.platform.engine.TestExecutionResult
 import java.lang.reflect.InvocationTargetException
+import kotlin.reflect.KCallable
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
@@ -58,13 +57,21 @@ class TestRunner(
             PER_METHOD -> classDesc.clazz.companionObject
         }
 
-        val beforeAll = classWithBeforeAndAfterMethods?.members
+        val beforeAllMethod = classWithBeforeAndAfterMethods?.members
                 ?.filter { it.name == "beforeAll" || it.findAnnotation<BeforeAll>() != null }
                 ?.firstOrNull { it.parameters.size == 1 && it.isSuspend }
 
-        val afterAll = classWithBeforeAndAfterMethods?.members
+        val afterAllMethod = classWithBeforeAndAfterMethods?.members
                 ?.filter { it.name == "afterAll" || it.findAnnotation<AfterAll>() != null }
                 ?.firstOrNull { it.parameters.size == 1 && it.isSuspend }
+
+        val beforeEachMethod = classDesc.clazz.members
+                .filter { it.name == "beforeEach" || it.findAnnotation<BeforeEach>() != null }
+                .firstOrNull { it.parameters.size == 1 && it.isSuspend }
+
+        val afterEachMethod = classDesc.clazz.members
+                .filter { it.name == "afterEach" || it.findAnnotation<AfterEach>() != null }
+                .firstOrNull { it.parameters.size == 1 && it.isSuspend }
 
         val classContext = CorounitContext()
         classContext[CorounitContext.TestClass] = classDesc.clazz
@@ -74,28 +81,28 @@ class TestRunner(
             when (testInstanceLifecycle) {
                 PER_CLASS -> {
                     val testInstance = pluginDispatcher.createTestClassInstance(classDesc.clazz)
-                    beforeAll?.callSuspend(testInstance)
+                    beforeAllMethod?.callSuspend(testInstance)
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
-                            launchMethod(classContext, methodDesc, testInstance)
+                            launchMethod(classContext, methodDesc, testInstance, beforeEachMethod, afterEachMethod)
                         }
                     }
 
-                    afterAll?.callSuspend(testInstance)
+                    afterAllMethod?.callSuspend(testInstance)
 
                 }
                 PER_METHOD -> {
-                    classDesc.clazz.companionObjectInstance?.let { beforeAll?.callSuspend(it) }
+                    classDesc.clazz.companionObjectInstance?.let { beforeAllMethod?.callSuspend(it) }
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
                             val testInstance = pluginDispatcher.createTestClassInstance(classDesc.clazz)
-                            launchMethod(classContext, methodDesc, testInstance)
+                            launchMethod(classContext, methodDesc, testInstance, beforeEachMethod, afterEachMethod)
                         }
                     }
 
-                    classDesc.clazz.companionObjectInstance?.let { afterAll?.callSuspend(it) }
+                    classDesc.clazz.companionObjectInstance?.let { afterAllMethod?.callSuspend(it) }
                 }
             }
         }
@@ -103,7 +110,13 @@ class TestRunner(
         pluginDispatcher.afterTestClass(pluginsClassContext)
     }
 
-    private suspend fun CoroutineScope.launchMethod(classContext: CorounitContext, methodDesc: CorounitMethodDescriptior, testInstance: Any) {
+    private suspend fun CoroutineScope.launchMethod(
+            classContext: CorounitContext,
+            methodDesc: CorounitMethodDescriptior,
+            testInstance: Any,
+            beforeEachMethod: KCallable<*>?,
+            afterEachMethod: KCallable<*>?
+            ) {
         val methodContext = classContext.copy()
         methodContext[CorounitContext.TestMethod] = methodDesc.method
         val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)
@@ -112,9 +125,12 @@ class TestRunner(
 
             val thr = executeDescriptor(methodDesc) {
                 try {
+                    beforeEachMethod?.callSuspend(testInstance)
                     methodDesc.method.callSuspend(testInstance)
                 } catch (invocationTargetExc: InvocationTargetException) {
                     throw invocationTargetExc.cause ?: invocationTargetExc
+                } finally {
+                    afterEachMethod?.callSuspend(testInstance)
                 }
             }
             pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)

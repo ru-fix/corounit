@@ -12,10 +12,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import mu.KotlinLogging
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.platform.engine.*
 import org.junit.platform.engine.discovery.ClassSelector
@@ -266,6 +263,53 @@ class TestClassInstancePerClassInvocationWithAnnotation {
     }
 }
 
+class BeforeAfterEach{
+    companion object{
+        val beforeEach = AtomicInteger()
+        val afterEach = AtomicInteger()
+        fun reset(){
+            beforeEach.set(0)
+            afterEach.set(0)
+        }
+    }
+    suspend fun beforeEach(){
+        beforeEach.incrementAndGet()
+    }
+    suspend fun afterEach(){
+        afterEach.incrementAndGet()
+    }
+
+    @Test
+    suspend fun firstMethod(){}
+    @Test
+    suspend fun secondMethod(){}
+}
+
+class BeforeAfterEachWithAnnotations{
+    companion object{
+        val beforeEach = AtomicInteger()
+        val afterEach = AtomicInteger()
+        fun reset(){
+            beforeEach.set(0)
+            afterEach.set(0)
+        }
+    }
+
+    @BeforeEach
+    suspend fun before(){
+        beforeEach.incrementAndGet()
+    }
+    @AfterEach
+    suspend fun after(){
+        afterEach.incrementAndGet()
+    }
+
+    @Test
+    suspend fun firstMethod(){}
+    @Test
+    suspend fun secondMethod(){}
+}
+
 class CorounitTestEngineTest {
 
     private val engine: CorounitTestEngine = CorounitTestEngine()
@@ -376,6 +420,27 @@ class CorounitTestEngineTest {
 
     }
 
+    @Test
+    fun `beforeEach and afterEach invoked in test suite without annotations`() {
+        val executionRequest = emulateDiscoveryStepForTestClass<BeforeAfterEach>()
+
+        BeforeAfterEach.reset()
+        engine.execute(executionRequest)
+
+        BeforeAfterEach.beforeEach.get().shouldBe(2)
+        BeforeAfterEach.afterEach.get().shouldBe(2)
+    }
+
+    @Test
+    fun `beforeEach and afterEach invoked in test suite with annotations`() {
+        val executionRequest = emulateDiscoveryStepForTestClass<BeforeAfterEachWithAnnotations>()
+
+        BeforeAfterEachWithAnnotations.reset()
+        engine.execute(executionRequest)
+
+        BeforeAfterEachWithAnnotations.beforeEach.get().shouldBe(2)
+        BeforeAfterEachWithAnnotations.afterEach.get().shouldBe(2)
+    }
 
     private inline fun <reified T> mockDiscoveryRequest(): EngineDiscoveryRequest {
         val discoveryRequest = mockk<EngineDiscoveryRequest>()
