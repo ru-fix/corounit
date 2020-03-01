@@ -222,6 +222,36 @@ class TestClass{
     suspend fun `my test`(){...}   
 }
 ```
+## Allure integration
+`corounit-allure` provides api to enrich test with Allure step description. 
+
+### Allure steps
+String steps allow clarify test case and will be present in Allure report.
+```kotlin
+@Test
+suspend fun `user travel`(){
+    "Purchase a flight ticket"{
+        ...
+    }
+    "Booking a hotel"{
+        ...
+    }
+}
+```
+
+### Parameterized tests
+
+```kotlin
+class TestClass{
+    @Test
+    suspend fun `my test`() = parameterized(
+        row(1, "one"),
+        row(2, "two"),
+        row(3, "three")){ number, text -> 
+        ...
+    }   
+}
+```
 
 ## Corounit Properties
 * `corounit.execution.parallelism=4` 
@@ -237,7 +267,7 @@ All non suspendable regular methods marked with `@Test` will stay untouched.
 Default JUnit Engine will launch them after Corounit Engine finish running suspendable tests.   
 
 
-## Allure integration
+## Allure reporting
 Corounit provides allure (http://allure.qatools.ru/) reporting integration via `corounit-allure` plugin.
 
 Add `allure.properties` file in `src/test/resources` directory.
