@@ -37,7 +37,7 @@ class TestClassWithDisabledMethod {
     @Package("my.package")
     @Description("description")
     @Test
-    suspend fun testMethod() {
+    suspend fun skippedTestMethod() {
         (2 * 2).shouldBe(4)
     }
 
@@ -56,6 +56,7 @@ class AllureAnnotationsTest {
             set(CorounitContext.TestClass, TestClass::class)
             set(CorounitContext.TestMethod, TestClass::testMethod)
         }) {
+
             val newContext = plugin.beforeTestMethod(coroutineContext)
             plugin.afterTestMethod(newContext, null)
         }
@@ -71,7 +72,7 @@ class AllureAnnotationsTest {
             }
         }
 
-        slot.captured.name.shouldBe("testMethod")
+        slot.captured.name.shouldBe(TestClass::testMethod.name)
         slot.captured.description.shouldBe("description")
 
         slot.captured.status.shouldBe(Status.PASSED)
@@ -86,8 +87,8 @@ class AllureAnnotationsTest {
         val plugin = AllureCorounitPlugin(writer = writer)
 
         runBlocking(CorounitContext().apply {
-            set(CorounitContext.TestClass, TestClass::class)
-            set(CorounitContext.TestMethod, TestClass::testMethod)
+            set(CorounitContext.TestClass, TestClassWithDisabledMethod::class)
+            set(CorounitContext.TestMethod, TestClassWithDisabledMethod::skippedTestMethod)
         }) {
 
             plugin.skipTestMethod(coroutineContext, "reason")
@@ -104,7 +105,7 @@ class AllureAnnotationsTest {
             }
         }
 
-        slot.captured.name.shouldBe("testMethod")
+        slot.captured.name.shouldBe(TestClassWithDisabledMethod::skippedTestMethod.name)
         slot.captured.description.shouldBe("description")
 
         slot.captured.status.shouldBe(Status.SKIPPED)
