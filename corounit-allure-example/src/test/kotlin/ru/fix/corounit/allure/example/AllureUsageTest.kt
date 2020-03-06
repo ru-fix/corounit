@@ -2,10 +2,12 @@ package ru.fix.corounit.allure.example
 
 import io.kotlintest.matchers.boolean.shouldBeTrue
 import io.kotlintest.matchers.numerics.shouldBeLessThan
+import io.kotlintest.shouldBe
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import ru.fix.corounit.allure.*
 
@@ -62,5 +64,11 @@ class AllureUsageTest {
 
         println("number $number is a $text")
         number.shouldBeLessThan(5)
+    }
+
+    @Disabled("disabled for example purpose")
+    @Test
+    suspend fun `disabled test method`(){
+        (2 * 2).shouldBe(5)
     }
 }
