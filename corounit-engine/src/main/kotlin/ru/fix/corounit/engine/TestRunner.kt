@@ -110,6 +110,16 @@ class TestRunner(
         pluginDispatcher.afterTestClass(pluginsClassContext)
     }
 
+    private suspend fun skipMethodAndNotifyIfDisabled(methodDesc: CorounitMethodDescriptior, methodContext: CorounitContext): Boolean{
+        val disabledAnnotation = methodDesc.method.findAnnotation<Disabled>()
+        if(disabledAnnotation != null){
+            listener.executionSkipped(methodDesc, disabledAnnotation.value)
+            pluginDispatcher.skipTestMethod(methodContext, disabledAnnotation.value)
+            return true
+        }
+        return false
+    }
+
     private suspend fun CoroutineScope.launchMethod(
             classContext: CorounitContext,
             methodDesc: CorounitMethodDescriptior,
@@ -119,6 +129,11 @@ class TestRunner(
             ) {
         val methodContext = classContext.copy()
         methodContext[CorounitContext.TestMethod] = methodDesc.method
+
+        if(skipMethodAndNotifyIfDisabled(methodDesc, methodContext)){
+            return
+        }
+
         val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)
 
         launch(pluginsMethodContext) {

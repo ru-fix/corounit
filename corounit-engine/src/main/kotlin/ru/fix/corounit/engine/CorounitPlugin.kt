@@ -13,6 +13,8 @@ interface CorounitPlugin {
     suspend fun beforeTestMethod(testMethodContext: CoroutineContext) = testMethodContext
     suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?){}
 
+    suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String){}
+
     fun <T: Any> createTestClassInstance(testClass: KClass<T>):T = throw NotImplementedError()
 
 }

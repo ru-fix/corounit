@@ -104,6 +104,13 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
         }
     }
 
+    override suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String) {
+        dispatch(testMethodContext){
+            skipTestMethod(it, reason)
+            it
+        }
+    }
+
     override fun <T : Any> createTestClassInstance(testClass: KClass<T>): T {
         return testClassInstanceCreator?.createTestClassInstance(testClass)
                 ?: testClass.createInstance()

@@ -181,12 +181,21 @@ class EngineExecutionListenerTrap : EngineExecutionListener {
 }
 
 object CorounitConfig : CorounitPlugin {
-    val invokedTimes = AtomicInteger()
+    val beforeAllTestClassesInvocationCount = AtomicInteger()
+    val skipMethodsInvocationCount = AtomicInteger()
 
+    fun reset(){
+        beforeAllTestClassesInvocationCount.set(0)
+        skipMethodsInvocationCount.set(0)
+    }
 
     override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
-        invokedTimes.incrementAndGet()
+        beforeAllTestClassesInvocationCount.incrementAndGet()
         return super.beforeAllTestClasses(globalContext)
+    }
+
+    override suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String) {
+        skipMethodsInvocationCount.incrementAndGet()
     }
 }
 
@@ -226,8 +235,27 @@ class TestClassInstancePerMethodInvocation {
     fun afterAll() {
         afterAllInvoked.set(true)
     }
+}
 
+class TestWithDisabledMethod{
+    companion object{
+        val test1 = AtomicBoolean()
+        val test2 = AtomicBoolean()
+        fun reset(){
+            test1.set(false)
+            test2.set(false)
+        }
+    }
 
+    @Disabled
+    @Test
+    suspend fun test1(){
+        test1.set(true)
+    }
+    @Test
+    suspend fun test2(){
+        test2.set(true)
+    }
 }
 
 @TestInstance(PER_CLASS)
@@ -379,12 +407,12 @@ class CorounitTestEngineTest {
 
     @Test
     fun `plugin object located in same package is invoked`() {
-        CorounitConfig.invokedTimes.set(0)
+        CorounitConfig.reset()
 
         val executionRequest = emulateDiscoveryStepForTestClass<MyTestClassForPlugin>()
         engine.execute(executionRequest)
 
-        CorounitConfig.invokedTimes.get().shouldBeGreaterThan(0)
+        CorounitConfig.beforeAllTestClassesInvocationCount.get().shouldBeGreaterThan(0)
     }
 
     @Test
@@ -430,6 +458,20 @@ class CorounitTestEngineTest {
         BeforeAfterEach.beforeEach.get().shouldBe(2)
         BeforeAfterEach.afterEach.get().shouldBe(2)
     }
+
+    @Test
+    fun `disabled test does not start`() {
+        val executionRequest = emulateDiscoveryStepForTestClass<TestWithDisabledMethod>()
+
+        CorounitConfig.reset()
+        TestWithDisabledMethod.reset()
+        engine.execute(executionRequest)
+
+        TestWithDisabledMethod.test1.get().shouldBe(false)
+        TestWithDisabledMethod.test2.get().shouldBe(true)
+        CorounitConfig.skipMethodsInvocationCount.get().shouldBeGreaterThan(0)
+    }
+
 
     @Test
     fun `beforeEach and afterEach invoked in test suite with annotations`() {
