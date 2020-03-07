@@ -10,10 +10,14 @@ import io.qameta.allure.*
 import io.qameta.allure.model.Status
 import io.qameta.allure.model.TestResult
 import io.qameta.allure.util.ResultsUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import ru.fix.corounit.engine.CorounitContext
+import ru.fix.corounit.engine.CorounitPlugin
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
 
 class TestClass {
 
@@ -45,18 +49,9 @@ class TestClassWithDisabledMethod {
 
 class AllureAnnotationsTest {
     @Test
-    fun `check annotations are working for success method invocation`() {
-        val writer = mockk<AllureResultsWriter>()
-        val slot = slot<TestResult>()
-        every { writer.write(capture(slot)) } returns Unit
+    fun `annotations are working for success method invocation`() {
 
-        val plugin = AllureCorounitPlugin(writer = writer)
-
-        runBlocking(CorounitContext().apply {
-            set(CorounitContext.TestClass, TestClass::class)
-            set(CorounitContext.TestMethod, TestClass::testMethod)
-        }) {
-
+        val testResult = emulatePlugin(TestClass::class, TestClass::testMethod){plugin ->
             val newContext = plugin.beforeTestMethod(coroutineContext)
             plugin.afterTestMethod(newContext, null)
         }
@@ -68,18 +63,18 @@ class AllureAnnotationsTest {
                 ResultsUtils.PACKAGE_LABEL_NAME to "my.package"
         ).forEach { expected ->
             withClue("label $expected") {
-                slot.captured.labels.any { it.name == expected.key && it.value == expected.value }.shouldBeTrue()
+                testResult.labels.any { it.name == expected.key && it.value == expected.value }.shouldBeTrue()
             }
         }
 
-        slot.captured.name.shouldBe(TestClass::testMethod.name)
-        slot.captured.description.shouldBe("description")
-
-        slot.captured.status.shouldBe(Status.PASSED)
+        testResult.name.shouldBe(TestClass::testMethod.name)
+        testResult.description.shouldBe("description")
+        testResult.status.shouldBe(Status.PASSED)
     }
 
-    @Test
-    fun `check annotations are working for skipped method invocation`() {
+    private fun emulatePlugin(testClass: KClass<*>,
+                              testMethod: KFunction<*>,
+                              pluginInvocation: suspend CoroutineScope.(plugin: CorounitPlugin)->Unit): TestResult{
         val writer = mockk<AllureResultsWriter>()
         val slot = slot<TestResult>()
         every { writer.write(capture(slot)) } returns Unit
@@ -87,10 +82,19 @@ class AllureAnnotationsTest {
         val plugin = AllureCorounitPlugin(writer = writer)
 
         runBlocking(CorounitContext().apply {
-            set(CorounitContext.TestClass, TestClassWithDisabledMethod::class)
-            set(CorounitContext.TestMethod, TestClassWithDisabledMethod::skippedTestMethod)
+            set(CorounitContext.TestClass, testClass)
+            set(CorounitContext.TestMethod, testMethod)
         }) {
+            pluginInvocation(plugin)
+        }
+        return slot.captured
+    }
 
+
+    @Test
+    fun `annotations are working for skipped method invocation`() {
+        val testResult =emulatePlugin(TestClassWithDisabledMethod::class,
+                TestClassWithDisabledMethod::skippedTestMethod){plugin ->
             plugin.skipTestMethod(coroutineContext, "reason")
         }
 
@@ -101,14 +105,14 @@ class AllureAnnotationsTest {
                 ResultsUtils.PACKAGE_LABEL_NAME to "my.package"
         ).forEach { expected ->
             withClue("label $expected") {
-                slot.captured.labels.any { it.name == expected.key && it.value == expected.value }.shouldBeTrue()
+                testResult.labels.any { it.name == expected.key && it.value == expected.value }.shouldBeTrue()
             }
         }
 
-        slot.captured.name.shouldBe(TestClassWithDisabledMethod::skippedTestMethod.name)
-        slot.captured.description.shouldBe("description")
+        testResult.name.shouldBe(TestClassWithDisabledMethod::skippedTestMethod.name)
+        testResult.description.shouldBe("description")
 
-        slot.captured.status.shouldBe(Status.SKIPPED)
-        slot.captured.statusDetails.message.shouldBe("reason")
+        testResult.status.shouldBe(Status.SKIPPED)
+        testResult.statusDetails.message.shouldBe("reason")
     }
 }
