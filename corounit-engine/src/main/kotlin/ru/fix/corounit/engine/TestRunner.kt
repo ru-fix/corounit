@@ -12,10 +12,8 @@ import org.junit.platform.engine.TestDescriptor
 import org.junit.platform.engine.TestExecutionResult
 import java.lang.reflect.InvocationTargetException
 import kotlin.reflect.KCallable
-import kotlin.reflect.full.callSuspend
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.KClass
+import kotlin.reflect.full.*
 
 class TestRunner(
         private val pluginDispatcher: PluginDispatcher,
@@ -57,6 +55,9 @@ class TestRunner(
             PER_METHOD -> classDesc.clazz.companionObject
         }
 
+        val listeners = getListeners(classDesc.clazz.findAnnotation<Listeners>()?.classes)
+        onTestRunStarted(classDesc, listeners)
+
         val beforeAllMethod = classWithBeforeAndAfterMethods?.members
                 ?.filter { it.name == "beforeAll" || it.findAnnotation<BeforeAll>() != null }
                 ?.firstOrNull { it.parameters.size == 1 && it.isSuspend }
@@ -85,7 +86,7 @@ class TestRunner(
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
-                            launchMethod(classContext, methodDesc, testInstance, beforeEachMethod, afterEachMethod)
+                            launchMethod(classContext, methodDesc, testInstance, beforeEachMethod, afterEachMethod, listeners)
                         }
                     }
 
@@ -98,7 +99,7 @@ class TestRunner(
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
                             val testInstance = pluginDispatcher.createTestClassInstance(classDesc.clazz)
-                            launchMethod(classContext, methodDesc, testInstance, beforeEachMethod, afterEachMethod)
+                            launchMethod(classContext, methodDesc, testInstance, beforeEachMethod, afterEachMethod, listeners)
                         }
                     }
 
@@ -108,6 +109,7 @@ class TestRunner(
         }
 
         pluginDispatcher.afterTestClass(pluginsClassContext)
+        onTestRunFinished(classDesc, listeners)
     }
 
     private suspend fun skipMethodAndNotifyIfDisabled(methodDesc: CorounitMethodDescriptior, methodContext: CorounitContext): Boolean{
@@ -125,12 +127,16 @@ class TestRunner(
             methodDesc: CorounitMethodDescriptior,
             testInstance: Any,
             beforeEachMethod: KCallable<*>?,
-            afterEachMethod: KCallable<*>?
+            afterEachMethod: KCallable<*>?,
+            listeners: List<CorounitListener>?
             ) {
+        onTestStarted(methodDesc, listeners)
         val methodContext = classContext.copy()
         methodContext[CorounitContext.TestMethod] = methodDesc.method
 
         if(skipMethodAndNotifyIfDisabled(methodDesc, methodContext)){
+            onTestSkipped(methodDesc, TestExecutionResult.aborted(null), listeners)
+            onTestFinished(methodDesc, TestExecutionResult.aborted(null), listeners)
             return
         }
 
@@ -149,6 +155,12 @@ class TestRunner(
                 }
             }
             pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
+            if (thr == null) {
+                onTestFinished(methodDesc, TestExecutionResult.successful(), listeners)
+            } else {
+                onTestFailure(methodDesc, TestExecutionResult.failed(thr), listeners)
+                onTestFinished(methodDesc, TestExecutionResult.failed(thr), listeners)
+            }
         }
     }
 
@@ -160,5 +172,36 @@ class TestRunner(
                 }
             }
         }
+    }
+
+    fun getListeners(listeners: Array<KClass<out CorounitListener>>?): List<CorounitListener>? {
+        if(listeners.isNullOrEmpty()) return null
+        val listenerObjects: MutableList<CorounitListener> = mutableListOf()
+        for (listener in listeners) listenerObjects.add(listener.createInstance())
+        return listenerObjects
+    }
+
+    fun onTestRunStarted(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
+        listeners?.parallelStream()?.forEach{ it.testRunStarted(descriptor) }
+    }
+
+    fun onTestStarted(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
+        listeners?.parallelStream()?.forEach{ it.testStarted(descriptor) }
+    }
+
+    fun onTestFinished(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
+        listeners?.parallelStream()?.forEach{ it.testFinished(descriptor, result) }
+    }
+
+    fun onTestRunFinished(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
+        listeners?.parallelStream()?.forEach{ it.testRunFinished(descriptor) }
+    }
+
+    fun onTestSkipped(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
+        listeners?.parallelStream()?.forEach{ it.testIgnored(descriptor, result) }
+    }
+
+    fun onTestFailure(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
+        listeners?.parallelStream()?.forEach{ it.testFailure(descriptor, result) }
     }
 }
