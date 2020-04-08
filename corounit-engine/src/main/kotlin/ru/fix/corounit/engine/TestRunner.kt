@@ -174,34 +174,34 @@ class TestRunner(
         }
     }
 
-    fun getListeners(listeners: Array<KClass<out CorounitListener>>?): List<CorounitListener>? {
+    private fun getListeners(listeners: Array<KClass<out CorounitListener>>?): List<CorounitListener>? {
         if(listeners.isNullOrEmpty()) return null
         val listenerObjects: MutableList<CorounitListener> = mutableListOf()
         for (listener in listeners) listenerObjects.add(listener.createInstance())
         return listenerObjects
     }
 
-    fun onTestRunStarted(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
+    private fun onTestRunStarted(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
         listeners?.parallelStream()?.forEach{ it.testRunStarted(descriptor) }
     }
 
-    fun onTestStarted(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
+    private fun onTestStarted(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
         listeners?.parallelStream()?.forEach{ it.testStarted(descriptor) }
     }
 
-    fun onTestFinished(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
+    private fun onTestFinished(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
         listeners?.parallelStream()?.forEach{ it.testFinished(descriptor, result) }
     }
 
-    fun onTestRunFinished(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
+    private fun onTestRunFinished(descriptor: TestDescriptor, listeners: List<CorounitListener>?) {
         listeners?.parallelStream()?.forEach{ it.testRunFinished(descriptor) }
     }
 
-    fun onTestSkipped(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
+    private fun onTestSkipped(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
         listeners?.parallelStream()?.forEach{ it.testIgnored(descriptor, result) }
     }
 
-    fun onTestFailure(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
+    private fun onTestFailure(descriptor: TestDescriptor, result: TestExecutionResult, listeners: List<CorounitListener>?) {
         listeners?.parallelStream()?.forEach{ it.testFailure(descriptor, result) }
     }
 }
