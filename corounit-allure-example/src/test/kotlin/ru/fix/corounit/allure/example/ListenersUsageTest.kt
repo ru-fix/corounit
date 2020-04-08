@@ -16,11 +16,6 @@ class ListenersUsageTest {
     }
 
     @Test
-    suspend fun `failed test method`(){
-        (2 * 2).shouldBe(5)
-    }
-
-    @Test
     suspend fun `succeed test method`(){
         (2 * 2).shouldBe(4)
     }
