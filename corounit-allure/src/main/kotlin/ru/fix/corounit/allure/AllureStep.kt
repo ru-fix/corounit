@@ -1,11 +1,15 @@
 package ru.fix.corounit.allure
 
 import io.qameta.allure.AllureConstants
-import io.qameta.allure.model.*
+import io.qameta.allure.model.Attachment
+import io.qameta.allure.model.Stage
+import io.qameta.allure.model.Status
+import io.qameta.allure.model.StepResult
 import io.qameta.allure.util.ResultsUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.time.Clock
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -43,6 +47,10 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
         suspend fun attachment(name: String, body: String) {
             fromCurrentCoroutineContext().attachment(name, body)
         }
+
+        suspend fun attachment(name: String, input: InputStream, type: String, extension: String) {
+            fromCurrentCoroutineContext().attachment(name, input, type, extension)
+        }
     }
 
     fun step(name: String, success: Boolean) {
@@ -52,7 +60,7 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
         childStep.stop(success)
     }
 
-    suspend fun <T> step(name: String, stepBody: suspend CoroutineScope.() -> T):T {
+    suspend fun <T> step(name: String, stepBody: suspend CoroutineScope.() -> T): T {
         val parentContext = this
         val childContext = createStep(name)
         parentContext.children.add(childContext)
@@ -113,14 +121,18 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
     }
 
 
-    @Synchronized
     fun attachment(name: String, body: String) {
-        val source = UUID.randomUUID().toString() + AllureConstants.ATTACHMENT_FILE_SUFFIX + ".txt"
-        AllureWriter.write(source, ByteArrayInputStream(body.toByteArray()))
+        attachment(name, ByteArrayInputStream(body.toByteArray()), "text/plain", "txt")
+    }
+
+    @Synchronized
+    fun attachment(name: String, input: InputStream, type: String, extension: String) {
+        val source = UUID.randomUUID().toString() + AllureConstants.ATTACHMENT_FILE_SUFFIX + ".$extension"
+        AllureWriter.write(source, input)
 
         val attach = Attachment()
                 .setName(name)
-                .setType("text/plain")
+                .setType(type)
                 .setSource(source)
         step.attachments.add(attach)
     }
