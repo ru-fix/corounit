@@ -2,9 +2,7 @@ package ru.fix.corounit.engine
 
 import io.kotlintest.matchers.asClue
 import io.kotlintest.matchers.boolean.shouldBeTrue
-import io.kotlintest.matchers.collections.shouldContain
-import io.kotlintest.matchers.collections.shouldContainAll
-import io.kotlintest.matchers.collections.shouldHaveSize
+import io.kotlintest.matchers.collections.*
 import io.kotlintest.matchers.numerics.shouldBeGreaterThan
 import io.kotlintest.matchers.types.shouldNotBeNull
 import io.kotlintest.shouldBe
@@ -27,20 +25,29 @@ import kotlin.coroutines.CoroutineContext
 private val log = KotlinLogging.logger { }
 
 open class TestState {
-    private val before = AtomicInteger()
-    private val after = AtomicInteger()
+    private val beforeEach = ConcurrentLinkedDeque<Int>()
+    private val afterEach = ConcurrentLinkedDeque<Int>()
+    private val beforeAll = ConcurrentLinkedDeque<Int>()
+    private val afterAll = ConcurrentLinkedDeque<Int>()
+
     private val tests = ConcurrentLinkedDeque<Int>()
     private val counter = AtomicInteger()
 
-    fun reset() {
+    open fun reset() {
         counter.set(0)
-        before.set(0)
-        after.set(0)
+        beforeEach.clear()
+        afterEach.clear()
         tests.clear()
+        beforeAll.clear()
+        afterAll.clear()
     }
 
-    fun beforeInvoked() {
-        before.set(counter.incrementAndGet())
+    fun beforeEachInvoked() {
+        beforeEach.addLast(counter.incrementAndGet())
+    }
+
+    fun beforeAllInvoked() {
+        beforeAll.addLast(counter.incrementAndGet())
     }
 
     fun testInvoked(): Int {
@@ -49,13 +56,19 @@ open class TestState {
         return count
     }
 
-    fun afterInvoked() {
-        after.set(counter.incrementAndGet())
+    fun afterEachInvoked() {
+        afterEach.addLast(counter.incrementAndGet())
     }
 
-    val beforeState get() = before.get()
+    fun afterAllInvoked() {
+        afterAll.addLast(counter.incrementAndGet())
+    }
+
+    val beforeEachState get() = beforeEach.toList()
+    val beforeAllState get() = beforeAll.toList()
     val testState get() = tests.toList()
-    val afterState get() = after.get()
+    val afterEachState get() = afterEach.toList()
+    val afterAllState get() = afterAll.toList()
 
 }
 
@@ -64,11 +77,11 @@ class MyTestWithoutAnnotations {
     companion object : TestState()
 
     suspend fun beforeAll() {
-        beforeInvoked()
+        beforeAllInvoked()
     }
 
     suspend fun afterAll() {
-        afterInvoked()
+        afterAllInvoked()
     }
 
     @Test
@@ -83,12 +96,12 @@ class MyTestWithAnnotations {
 
     @BeforeAll
     suspend fun setUp() {
-        beforeInvoked()
+        beforeAllInvoked()
     }
 
     @AfterAll
     suspend fun tearDown() {
-        afterInvoked()
+        afterAllInvoked()
     }
 
     @Test
@@ -207,33 +220,36 @@ class MyTestClassForPlugin {
 }
 
 class TestClassInstancePerMethodInvocation {
-    companion object {
+    companion object : TestState(){
         val instances = ConcurrentLinkedDeque<TestClassInstancePerMethodInvocation>()
-        val beforeAllInvoked = AtomicBoolean(false)
-        val afterAllInvoked = AtomicBoolean(false)
-        fun reset() {
+        override fun reset() {
+            super.reset()
             instances.clear()
-            beforeAllInvoked.set(true)
-            afterAllInvoked.set(true)
         }
     }
 
     @Test
     suspend fun firstMethod() {
         instances.addLast(this)
+        testInvoked()
     }
 
     @Test
     suspend fun secondMethod() {
         instances.addLast(this)
+        testInvoked()
     }
 
-    fun beforeAll() {
-        beforeAllInvoked.set(true)
+    suspend fun beforeEach(){
+        beforeEachInvoked()
     }
 
-    fun afterAll() {
-        afterAllInvoked.set(true)
+    suspend fun beforeAll() {
+        beforeAllInvoked()
+    }
+
+    suspend fun afterAll() {
+        afterAllInvoked()
     }
 }
 
@@ -260,82 +276,77 @@ class TestWithDisabledMethod{
 
 @TestInstance(PER_CLASS)
 class TestClassInstancePerClassInvocationWithAnnotation {
-    companion object {
+    companion object : TestState() {
         val instances = ConcurrentLinkedDeque<TestClassInstancePerClassInvocationWithAnnotation>()
-        val beforeAllInvoked = AtomicBoolean(false)
-        val afterAllInvoked = AtomicBoolean(false)
 
-        fun beforeAll() {
-            beforeAllInvoked.set(true)
-        }
-
-        fun afterAll() {
-            afterAllInvoked.set(true)
-        }
-
-        fun reset() {
+        override fun reset() {
+            super.reset()
             instances.clear()
-            beforeAllInvoked.set(true)
-            afterAllInvoked.set(true)
         }
+    }
+    suspend fun beforeAll() {
+        beforeAllInvoked()
+
+    }
+
+    suspend fun afterAll() {
+        afterAllInvoked()
     }
 
     @Test
     suspend fun firstMethod() {
         instances.addLast(this)
+        testInvoked()
     }
 
     @Test
     suspend fun secondMethod() {
         instances.addLast(this)
+        testInvoked()
     }
 }
 
 class BeforeAfterEach{
-    companion object{
-        val beforeEach = AtomicInteger()
-        val afterEach = AtomicInteger()
-        fun reset(){
-            beforeEach.set(0)
-            afterEach.set(0)
-        }
+    companion object: TestState(){
     }
     suspend fun beforeEach(){
-        beforeEach.incrementAndGet()
+        beforeEachInvoked()
     }
     suspend fun afterEach(){
-        afterEach.incrementAndGet()
+        afterEachInvoked()
     }
 
     @Test
-    suspend fun firstMethod(){}
+    suspend fun firstMethod(){
+        testInvoked()
+    }
     @Test
-    suspend fun secondMethod(){}
+    suspend fun secondMethod(){
+        testInvoked()
+    }
 }
 
 class BeforeAfterEachWithAnnotations{
-    companion object{
-        val beforeEach = AtomicInteger()
-        val afterEach = AtomicInteger()
-        fun reset(){
-            beforeEach.set(0)
-            afterEach.set(0)
-        }
+    companion object: TestState(){
     }
 
     @BeforeEach
     suspend fun before(){
-        beforeEach.incrementAndGet()
+        beforeEachInvoked()
     }
     @AfterEach
     suspend fun after(){
-        afterEach.incrementAndGet()
+        afterEachInvoked()
     }
 
     @Test
-    suspend fun firstMethod(){}
+    suspend fun firstMethod(){
+        testInvoked()
+    }
     @Test
-    suspend fun secondMethod(){}
+    suspend fun secondMethod(){
+        testInvoked()
+    }
 }
 
 class CorounitTestEngineTest {
@@ -350,9 +361,11 @@ class CorounitTestEngineTest {
 
         engine.execute(executionRequest)
 
-        MyTestWithoutAnnotations.beforeState.shouldBe(1)
-        MyTestWithoutAnnotations.testState.shouldContain(2)
-        MyTestWithoutAnnotations.afterState.shouldBe(3)
+        MyTestWithoutAnnotations.beforeEachState.shouldContainExactly()
+        MyTestWithoutAnnotations.beforeAllState.shouldContainExactly(1)
+        MyTestWithoutAnnotations.testState.shouldContainExactly(2)
+        MyTestWithoutAnnotations.afterEachState.shouldContainExactly()
+        MyTestWithoutAnnotations.afterAllState.shouldContainExactly(3)
     }
 
     @Test
@@ -362,9 +375,11 @@ class CorounitTestEngineTest {
         MyTestWithAnnotations.reset()
         engine.execute(executionRequest)
 
-        MyTestWithAnnotations.beforeState.shouldBe(1)
-        MyTestWithAnnotations.testState.shouldContain(2)
-        MyTestWithAnnotations.afterState.shouldBe(3)
+        MyTestWithAnnotations.beforeEachState.shouldContainExactly()
+        MyTestWithAnnotations.beforeAllState.shouldContainExactly(1)
+        MyTestWithAnnotations.testState.shouldContainExactly(2)
+        MyTestWithAnnotations.afterEachState.shouldContainExactly()
+        MyTestWithAnnotations.afterAllState.shouldContainExactly(3)
     }
 
     @Test
@@ -376,9 +391,9 @@ class CorounitTestEngineTest {
         engine.execute(executionRequest)
         FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(false)
 
-        FirstMethodsWaitsOthersTest.beforeState.shouldBe(0)
-        FirstMethodsWaitsOthersTest.testState.asClue { it.shouldContainAll(1, 2, 3) }
-        FirstMethodsWaitsOthersTest.afterState.shouldBe(0)
+        FirstMethodsWaitsOthersTest.beforeEachState.shouldContainExactly()
+        FirstMethodsWaitsOthersTest.testState.shouldContainExactlyInAnyOrder(1, 2, 3)
+        FirstMethodsWaitsOthersTest.afterEachState.shouldContainExactly()
     }
 
     @Test
@@ -427,8 +442,11 @@ class CorounitTestEngineTest {
         (TestClassInstancePerMethodInvocation.instances.first !== TestClassInstancePerMethodInvocation.instances.last)
                 .shouldBeTrue()
 
-        TestClassInstancePerMethodInvocation.beforeAllInvoked.get().shouldBeTrue()
-        TestClassInstancePerMethodInvocation.afterAllInvoked.get().shouldBeTrue()
+        TestClassInstancePerMethodInvocation.beforeAllState.shouldContainExactly()
+        TestClassInstancePerMethodInvocation.beforeEachState.shouldHaveSize(2)
+        TestClassInstancePerMethodInvocation.testState.shouldHaveSize(2)
+        TestClassInstancePerMethodInvocation.afterEachState.shouldBeEmpty()
+        TestClassInstancePerMethodInvocation.afterAllState.shouldBeEmpty()
     }
 
     @Test
@@ -443,8 +461,11 @@ class CorounitTestEngineTest {
                 TestClassInstancePerClassInvocationWithAnnotation.instances.last)
                 .shouldBeTrue()
 
-        TestClassInstancePerClassInvocationWithAnnotation.beforeAllInvoked.get().shouldBeTrue()
-        TestClassInstancePerClassInvocationWithAnnotation.afterAllInvoked.get().shouldBeTrue()
+        TestClassInstancePerClassInvocationWithAnnotation.beforeAllState.shouldContainExactly(1)
+        TestClassInstancePerClassInvocationWithAnnotation.beforeEachState.shouldContainExactly()
+        TestClassInstancePerClassInvocationWithAnnotation.testState.shouldContainExactly(2, 3)
+        TestClassInstancePerClassInvocationWithAnnotation.afterEachState.shouldContainExactly()
+        TestClassInstancePerClassInvocationWithAnnotation.afterAllState.shouldContainExactly(4)
 
     }
 
@@ -455,8 +476,11 @@ class CorounitTestEngineTest {
         BeforeAfterEach.reset()
         engine.execute(executionRequest)
 
-        BeforeAfterEach.beforeEach.get().shouldBe(2)
-        BeforeAfterEach.afterEach.get().shouldBe(2)
+        BeforeAfterEach.beforeAllState.shouldBeEmpty()
+        BeforeAfterEach.beforeEachState.shouldHaveSize(2)
+        BeforeAfterEach.testState.shouldHaveSize(2)
+        BeforeAfterEach.afterEachState.shouldHaveSize(2)
+        BeforeAfterEach.afterAllState.shouldBeEmpty()
     }
 
     @Test
@@ -480,8 +504,11 @@ class CorounitTestEngineTest {
         BeforeAfterEachWithAnnotations.reset()
         engine.execute(executionRequest)
 
-        BeforeAfterEachWithAnnotations.beforeEach.get().shouldBe(2)
-        BeforeAfterEachWithAnnotations.afterEach.get().shouldBe(2)
+        BeforeAfterEachWithAnnotations.beforeAllState.shouldContainExactly()
+        BeforeAfterEachWithAnnotations.beforeEachState.shouldContainExactly(1, 4)
+        BeforeAfterEachWithAnnotations.testState.shouldContainExactly(2, 5)
+        BeforeAfterEachWithAnnotations.afterEachState.shouldContainExactly(3, 6)
+        BeforeAfterEachWithAnnotations.afterAllState.shouldContainExactly()
     }
 
     private inline fun <reified T> mockDiscoveryRequest(): EngineDiscoveryRequest {
