@@ -14,7 +14,7 @@ import ru.fix.corounit.allure.*
 private val log = KotlinLogging.logger { }
 
 
-class AllureUsageTest {
+class FlightBookingTest {
 
     val airport = createStepClassInstance<AirportSteps>()
 
