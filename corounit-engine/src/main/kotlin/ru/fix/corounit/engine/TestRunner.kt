@@ -59,19 +59,19 @@ class TestRunner(
 
         val beforeAllMethod = classWithBeforeAndAfterMethods?.members
                 ?.filter { it.name == "beforeAll" || it.findAnnotation<BeforeAll>() != null }
-                ?.firstOrNull { it.parameters.size == 1 && it.isSuspend }
+                ?.firstOrNull { it.parameters.size == 1 }
 
         val afterAllMethod = classWithBeforeAndAfterMethods?.members
                 ?.filter { it.name == "afterAll" || it.findAnnotation<AfterAll>() != null }
-                ?.firstOrNull { it.parameters.size == 1 && it.isSuspend }
+                ?.firstOrNull { it.parameters.size == 1 }
 
         val beforeEachMethod = classDesc.clazz.members
                 .filter { it.name == "beforeEach" || it.findAnnotation<BeforeEach>() != null }
-                .firstOrNull { it.parameters.size == 1 && it.isSuspend }
+                .firstOrNull { it.parameters.size == 1 }
 
         val afterEachMethod = classDesc.clazz.members
                 .filter { it.name == "afterEach" || it.findAnnotation<AfterEach>() != null }
-                .firstOrNull { it.parameters.size == 1 && it.isSuspend }
+                .firstOrNull { it.parameters.size == 1 }
 
         val classContext = CorounitContext()
         classContext[CorounitContext.TestClass] = classDesc.clazz
@@ -81,7 +81,7 @@ class TestRunner(
             when (testInstanceLifecycle) {
                 PER_CLASS -> {
                     val testInstance = pluginDispatcher.createTestClassInstance(classDesc.clazz)
-                    beforeAllMethod?.callSuspend(testInstance)
+                    beforeAllMethod?.invokeAspectMethodOfTestInstnace(testInstance)
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
@@ -89,11 +89,11 @@ class TestRunner(
                         }
                     }
 
-                    afterAllMethod?.callSuspend(testInstance)
+                    afterAllMethod?.invokeAspectMethodOfTestInstnace(testInstance)
 
                 }
                 PER_METHOD -> {
-                    classDesc.clazz.companionObjectInstance?.let { beforeAllMethod?.callSuspend(it) }
+                    classDesc.clazz.companionObjectInstance?.let { beforeAllMethod?.invokeAspectMethodOfTestInstnace(it) }
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
@@ -102,7 +102,7 @@ class TestRunner(
                         }
                     }
 
-                    classDesc.clazz.companionObjectInstance?.let { afterAllMethod?.callSuspend(it) }
+                    classDesc.clazz.companionObjectInstance?.let { afterAllMethod?.invokeAspectMethodOfTestInstnace(it) }
                 }
             }
         }
@@ -110,9 +110,9 @@ class TestRunner(
         pluginDispatcher.afterTestClass(pluginsClassContext)
     }
 
-    private suspend fun skipMethodAndNotifyIfDisabled(methodDesc: CorounitMethodDescriptior, methodContext: CorounitContext): Boolean{
+    private suspend fun skipMethodAndNotifyIfDisabled(methodDesc: CorounitMethodDescriptior, methodContext: CorounitContext): Boolean {
         val disabledAnnotation = methodDesc.method.findAnnotation<Disabled>()
-        if(disabledAnnotation != null){
+        if (disabledAnnotation != null) {
             listener.executionSkipped(methodDesc, disabledAnnotation.value)
             pluginDispatcher.skipTestMethod(methodContext, disabledAnnotation.value)
             return true
@@ -126,11 +126,11 @@ class TestRunner(
             testInstance: Any,
             beforeEachMethod: KCallable<*>?,
             afterEachMethod: KCallable<*>?
-            ) {
+    ) {
         val methodContext = classContext.copy()
         methodContext[CorounitContext.TestMethod] = methodDesc.method
 
-        if(skipMethodAndNotifyIfDisabled(methodDesc, methodContext)){
+        if (skipMethodAndNotifyIfDisabled(methodDesc, methodContext)) {
             return
         }
 
@@ -140,12 +140,12 @@ class TestRunner(
 
             val thr = executeDescriptor(methodDesc) {
                 try {
-                    beforeEachMethod?.callSuspend(testInstance)
+                    beforeEachMethod?.invokeAspectMethodOfTestInstnace(testInstance)
                     methodDesc.method.callSuspend(testInstance)
                 } catch (invocationTargetExc: InvocationTargetException) {
                     throw invocationTargetExc.cause ?: invocationTargetExc
                 } finally {
-                    afterEachMethod?.callSuspend(testInstance)
+                    afterEachMethod?.invokeAspectMethodOfTestInstnace(testInstance)
                 }
             }
             pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
@@ -160,5 +160,10 @@ class TestRunner(
                 }
             }
         }
+    }
+
+    private suspend fun KCallable<*>.invokeAspectMethodOfTestInstnace(testInstance: Any) {
+        if (isSuspend) callSuspend(testInstance)
+        else call(testInstance)
     }
 }

@@ -95,7 +95,7 @@ class MyTestWithAnnotations {
     companion object : TestState()
 
     @BeforeAll
-    suspend fun setUp() {
+    fun setUp() {
         beforeAllInvoked()
     }
 
@@ -244,7 +244,7 @@ class TestClassInstancePerMethodInvocation {
         beforeEachInvoked()
     }
 
-    suspend fun beforeAll() {
+    fun beforeAll() {
         beforeAllInvoked()
     }
 
@@ -289,7 +289,7 @@ class TestClassInstancePerClassInvocationWithAnnotation {
 
     }
 
-    suspend fun afterAll() {
+    fun afterAll() {
         afterAllInvoked()
     }
 
