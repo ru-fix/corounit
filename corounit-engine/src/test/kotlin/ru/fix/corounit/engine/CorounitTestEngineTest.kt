@@ -516,11 +516,13 @@ class CorounitTestEngineTest {
         BeforeAfterEachWithAnnotations.reset()
         engine.execute(executionRequest)
 
-        BeforeAfterEachWithAnnotations.beforeAllState.shouldContainExactly()
-        BeforeAfterEachWithAnnotations.beforeEachState.shouldContainExactly(1, 4)
-        BeforeAfterEachWithAnnotations.testState.shouldContainExactly(2, 5)
-        BeforeAfterEachWithAnnotations.afterEachState.shouldContainExactly(3, 6)
-        BeforeAfterEachWithAnnotations.afterAllState.shouldContainExactly()
+        BeforeAfterEachWithAnnotations.beforeAllState.shouldBeEmpty()
+        BeforeAfterEachWithAnnotations.beforeEachState.shouldContain(1)
+        BeforeAfterEachWithAnnotations.beforeEachState.shouldHaveSize(2)
+        BeforeAfterEachWithAnnotations.testState.shouldHaveSize(2)
+        BeforeAfterEachWithAnnotations.afterEachState.shouldHaveSize(2)
+        BeforeAfterEachWithAnnotations.afterEachState.shouldContain(6)
+        BeforeAfterEachWithAnnotations.afterAllState.shouldBeEmpty()
     }
 
     private inline fun <reified T> mockDiscoveryRequest(): EngineDiscoveryRequest {
