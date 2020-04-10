@@ -116,11 +116,15 @@ class LongRunningTest {
 }
 ```  
 
-## Corounit plugins
-Corounit Test Engine provide extension point for test execution lifecycle.
+## Corounit plugins and listeners
+Corounit Test Engine provide extension point for test execution lifecycle.  
+This extension point called `CorounitPlugin`.  
+You can use it to Listen for test run events or override coroutine context and behaviour.
 
+There are two options to add extension point into your project:  
+  
 * Create `CorounitConfig` object in your test module package.
-* Use JVM ServiceLoader mechanism. 
+* Or use JVM ServiceLoader mechanism. 
 Define `ru.fix.corounit.engine.CorounitPlugin` entry within META-INF/services.
 You can tak a look at  `corounit-allure` module.
 
