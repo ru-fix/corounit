@@ -284,12 +284,15 @@ class TestClass{
 ```
 
 ## Corounit Properties
+You can add corounit properties within default JUnit property file at `src/test/resources/junit-platform.properties`:
+
 * `corounit.execution.parallelism=4` 
  How many threads corounite engine will use to execute tests.
 * `corounit.testinstance.lifecycle.default=per_class` 
- By default corounit will create new instance of test class for each method invocation.
+ By default corounit will create new instance of test class for each method invocation. Default value is calculated based on number of CPU.
  This property changes that behaviour so corounit will create single test class instance
  and will use same instance for all method invocation.
+ Explicit behaviour can be set via `@TestInstance(PER_CLASS)` test class annotation. Default value is `per_method`.
 
 ## JUnit friendship
 Corounit Engine will look for `suspendable` test methods marked with `@Test` annotation and run them. 
