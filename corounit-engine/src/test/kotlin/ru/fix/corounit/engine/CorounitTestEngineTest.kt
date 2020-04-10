@@ -193,13 +193,15 @@ class EngineExecutionListenerTrap : EngineExecutionListener {
     }
 }
 
-object CorounitConfig : CorounitPlugin {
+object CorounitConfig : CorounitPlugin, CorounitPluginsProvider {
     val beforeAllTestClassesInvocationCount = AtomicInteger()
     val skipMethodsInvocationCount = AtomicInteger()
+    val providerBeforeAllTestClassesInvocationCount = AtomicInteger()
 
     fun reset(){
         beforeAllTestClassesInvocationCount.set(0)
         skipMethodsInvocationCount.set(0)
+        providerBeforeAllTestClassesInvocationCount.set(0)
     }
 
     override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
@@ -209,6 +211,15 @@ object CorounitConfig : CorounitPlugin {
 
     override suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String) {
         skipMethodsInvocationCount.incrementAndGet()
+    }
+
+    override fun plugins(): List<CorounitPlugin> {
+        return listOf(object: CorounitPlugin{
+            override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
+                providerBeforeAllTestClassesInvocationCount.incrementAndGet()
+                return super.beforeAllTestClasses(globalContext)
+            }
+        })
     }
 }
 
@@ -428,6 +439,7 @@ class CorounitTestEngineTest {
         engine.execute(executionRequest)
 
         CorounitConfig.beforeAllTestClassesInvocationCount.get().shouldBeGreaterThan(0)
+        CorounitConfig.providerBeforeAllTestClassesInvocationCount.get().shouldBeGreaterThan(0)
     }
 
     @Test

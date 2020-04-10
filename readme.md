@@ -118,14 +118,18 @@ class LongRunningTest {
 
 ## Corounit plugins
 Corounit Test Engine provide extension point for test execution lifecycle.
-* Use JVM ServiceLoader mechanism. You can tak a look at  `corounit-allure` module.
-* Create `CorounitConfig` object in your test module package.
 
-Object `CorounitConfig` should implement `CorounitPlugin` interface.  
+* Create `CorounitConfig` object in your test module package.
+* Use JVM ServiceLoader mechanism. 
+Define `ru.fix.corounit.engine.CorounitPlugin` entry within META-INF/services.
+You can tak a look at  `corounit-allure` module.
+
+Object `CorounitConfig` should implement `CorounitPlugin` interface or `CorounitPluginsProvider` interface.  
 Put this object in subpackage of any of the test classes.
 
-Override any methods that you want to. 
-For example you can start mocking server before all test cases and shutdown after all test cases complete.
+Override any methods of `CorounitPlugin` that you want to.  
+Or define list of plugins by impemening `CorounitPluginsProvider` interface.  
+For example, you can start mocking server before all test cases and shutdown after all test cases complete.
 
 ```kotlin
 package base.pacakge.of.the.project
@@ -147,6 +151,28 @@ object CorounitConfig: CorounitPlugin {
     ...
 }
 ```
+You can provide several plugins from single CorounitConfig object by implementing `CorounitPluginsProvider` interface.
+```kotlin
+package base.pacakge.of.the.project
+
+object CorounitConfig: CorounitPluginsProvider {
+
+    override suspend fun beforeAllTestClasses(globalContext: CoroutineContext): CoroutineContext {
+        // do custom initialization here,
+        // like starting mock server 
+        // that will be used by several different test classes        
+        return super.beforeAllTestClasses(globalContext)
+    }
+    override suspend fun afterAllTestClasses(globalContext: CoroutineContext) {
+        // shutdow mock server after all test classes completion
+        super.afterAllTestClasses(globalContext)
+    }
+    
+    // CorounitPlugin has other handy test lifecycle methods waiting for you to override.  
+    ...
+}
+```
+
 ## Test class instance
 
 By default corounit uses new test class instance for each method invocation. 

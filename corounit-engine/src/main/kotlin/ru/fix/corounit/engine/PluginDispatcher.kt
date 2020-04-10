@@ -37,11 +37,15 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
                         null
                     }
                 }
-                .mapNotNull {
-                    it.kotlin.objectInstance as? CorounitPlugin
-                }
 
-        plugins = byServiceLoader + byConfigObjects
+        val byConfigPlugins = byConfigObjects.mapNotNull {
+            it.kotlin.objectInstance as? CorounitPlugin
+        }
+        val byConfigPluginsProvidersPlugins = byConfigObjects.mapNotNull {
+            it.kotlin.objectInstance as? CorounitPluginsProvider
+        }.flatMap { it.plugins() }
+
+        plugins = byServiceLoader + byConfigPlugins + byConfigPluginsProvidersPlugins
 
         testClassInstanceCreator = plugins.find {
             it.javaClass.kotlin.declaredFunctions.any {
@@ -105,7 +109,7 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
     }
 
     override suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String) {
-        dispatch(testMethodContext){
+        dispatch(testMethodContext) {
             skipTestMethod(it, reason)
             it
         }
