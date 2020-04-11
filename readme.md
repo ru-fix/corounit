@@ -176,6 +176,25 @@ object CorounitConfig: CorounitPluginsProvider {
     ...
 }
 ```
+Example of a listener that logs test execution results
+```kotlin
+class TestResultLogger: CorounitPlugin{
+    override suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+        val testClass = testMethodContext[TestClassContextElement]!!.testClass
+        val testMethod = testMethodContext[TestMethodContextElement]!!.testMethod
+        if(thr == null){
+            log.info { "Test $testClass : $testMethod passed" }
+        }else {
+            log.info { "Test $testClass : $testMethod failed with exception: $thr" }
+        }
+    }
+    override suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String) {
+        val testClass = testMethodContext[TestClassContextElement]!!.testClass
+        val testMethod = testMethodContext[TestMethodContextElement]!!.testMethod
+        log.info { "Test $testClass : $testMethod skipped due to $reason" }
+    }
+}
+```
 
 ## Test class instance
 

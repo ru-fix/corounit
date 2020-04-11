@@ -9,8 +9,9 @@ import io.qameta.allure.model.TestResult
 import io.qameta.allure.util.AnnotationUtils
 import io.qameta.allure.util.ResultsUtils
 import kotlinx.coroutines.CoroutineName
-import ru.fix.corounit.engine.CorounitContext
 import ru.fix.corounit.engine.CorounitPlugin
+import ru.fix.corounit.engine.TestClassContextElement
+import ru.fix.corounit.engine.TestMethodContextElement
 import java.time.Clock
 import java.util.*
 import kotlin.collections.HashMap
@@ -28,19 +29,18 @@ class AllureCorounitPlugin(
         val testResult = createAllureTestResult(testMethodContext)
         return testMethodContext +
                 AllureStep() +
-                TestResultContext(testResult)
+                TestResultContextElement(testResult)
     }
 
     private fun createAllureTestResult(testMethodContext: CoroutineContext): TestResult {
-        val corounitContext = CorounitContext.fromContext(testMethodContext)
-        val testClass = corounitContext.testClass
-        val testMethod = corounitContext.testMethod
+        val testClass = testMethodContext[TestClassContextElement]!!.testClass
+        val testMethod = testMethodContext[TestMethodContextElement]!!.testMethod
 
         return TestResult().apply {
             start = clock.millis()
             name = testMethod.name
             fullName = testMethod.name
-            testCaseId = CorounitContext.fromContext(testMethodContext).testClass.qualifiedName
+            testCaseId = testClass.qualifiedName
             uuid = UUID.randomUUID().toString()
             historyId = ResultsUtils.md5("${testClass.qualifiedName}::${testMethod.name}")
             description = testMethod.findAnnotation<Description>()?.value
@@ -67,7 +67,7 @@ class AllureCorounitPlugin(
     }
 
     override suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
-        val testResult = testMethodContext[TestResultContext.Key]!!.allureResult
+        val testResult = testMethodContext[TestResultContextElement]!!.allureResult
         val methodInvocationStep = AllureStep.fromCoroutineContext(testMethodContext)
 
         testResult.apply {

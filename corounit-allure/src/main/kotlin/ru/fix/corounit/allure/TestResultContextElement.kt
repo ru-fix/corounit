@@ -3,10 +3,8 @@ package ru.fix.corounit.allure
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
-internal class TestResultContext(
+internal class TestResultContextElement(
         val allureResult: io.qameta.allure.model.TestResult
-) : AbstractCoroutineContextElement(Key) {
-    companion object {
-        val Key = object : CoroutineContext.Key<TestResultContext> {}
-    }
+) : AbstractCoroutineContextElement(TestResultContextElement) {
+    companion object : CoroutineContext.Key<TestResultContextElement>
 }

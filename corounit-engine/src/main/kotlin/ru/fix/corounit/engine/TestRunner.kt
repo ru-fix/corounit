@@ -11,6 +11,8 @@ import org.junit.platform.engine.EngineExecutionListener
 import org.junit.platform.engine.TestDescriptor
 import org.junit.platform.engine.TestExecutionResult
 import java.lang.reflect.InvocationTargetException
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KCallable
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.companionObject
@@ -73,8 +75,8 @@ class TestRunner(
                 .filter { it.name == "afterEach" || it.findAnnotation<AfterEach>() != null }
                 .firstOrNull { it.parameters.size == 1 }
 
-        val classContext = CorounitContext()
-        classContext[CorounitContext.TestClass] = classDesc.clazz
+        val classContext = TestClassContextElement(classDesc.clazz)
+
         val pluginsClassContext = pluginDispatcher.beforeTestClass(classContext)
 
         executeDescriptor(classDesc) {
@@ -110,7 +112,7 @@ class TestRunner(
         pluginDispatcher.afterTestClass(pluginsClassContext)
     }
 
-    private suspend fun skipMethodAndNotifyIfDisabled(methodDesc: CorounitMethodDescriptior, methodContext: CorounitContext): Boolean {
+    private suspend fun skipMethodAndNotifyIfDisabled(methodDesc: CorounitMethodDescriptior, methodContext: CoroutineContext): Boolean {
         val disabledAnnotation = methodDesc.method.findAnnotation<Disabled>()
         if (disabledAnnotation != null) {
             listener.executionSkipped(methodDesc, disabledAnnotation.value)
@@ -121,20 +123,19 @@ class TestRunner(
     }
 
     private suspend fun CoroutineScope.launchMethod(
-            classContext: CorounitContext,
+            classContext: TestClassContextElement,
             methodDesc: CorounitMethodDescriptior,
             testInstance: Any,
             beforeEachMethod: KCallable<*>?,
             afterEachMethod: KCallable<*>?
     ) {
-        val methodContext = classContext.copy()
-        methodContext[CorounitContext.TestMethod] = methodDesc.method
+        val methodContext = classContext + TestMethodContextElement(methodDesc.method)
 
         if (skipMethodAndNotifyIfDisabled(methodDesc, methodContext)) {
             return
         }
 
-        val pluginsMethodContext = pluginDispatcher.beforeTestMethod(classContext + methodContext)
+        val pluginsMethodContext = pluginDispatcher.beforeTestMethod(methodContext)
 
         launch(pluginsMethodContext) {
 

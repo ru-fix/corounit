@@ -14,8 +14,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import ru.fix.corounit.engine.CorounitContext
 import ru.fix.corounit.engine.CorounitPlugin
+import ru.fix.corounit.engine.TestClassContextElement
+import ru.fix.corounit.engine.TestMethodContextElement
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
@@ -81,10 +82,7 @@ class AllureAnnotationsTest {
 
         val plugin = AllureCorounitPlugin(writer = writer)
 
-        runBlocking(CorounitContext().apply {
-            set(CorounitContext.TestClass, testClass)
-            set(CorounitContext.TestMethod, testMethod)
-        }) {
+        runBlocking(TestClassContextElement(testClass) + TestMethodContextElement(testMethod)) {
             pluginInvocation(plugin)
         }
         return slot.captured
