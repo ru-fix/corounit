@@ -12,7 +12,6 @@ import org.junit.platform.engine.TestDescriptor
 import org.junit.platform.engine.TestExecutionResult
 import java.lang.reflect.InvocationTargetException
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KCallable
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.companionObject

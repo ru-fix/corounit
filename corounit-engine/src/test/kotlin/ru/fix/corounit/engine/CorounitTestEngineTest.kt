@@ -362,11 +362,12 @@ class BeforeAfterEachWithAnnotations{
 
 class CorounitTestEngineTest {
 
-    private val engine: CorounitTestEngine = CorounitTestEngine()
+    private val engine = EngineEmulator()
+
 
     @Test
     fun `beforeAll and afterAll invoked in test suite without annotations`() {
-        val executionRequest = emulateDiscoveryStepForTestClass<MyTestWithoutAnnotations>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestWithoutAnnotations>()
 
         MyTestWithoutAnnotations.reset()
 
@@ -381,7 +382,7 @@ class CorounitTestEngineTest {
 
     @Test
     fun `beforeAll and afterAll invoked in test suite with annotations`() {
-        val executionRequest = emulateDiscoveryStepForTestClass<MyTestWithAnnotations>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestWithAnnotations>()
 
         MyTestWithAnnotations.reset()
         engine.execute(executionRequest)
@@ -395,7 +396,7 @@ class CorounitTestEngineTest {
 
     @Test
     fun `first test method waits others to complete and whole suite passes without timeout`() {
-        val executionRequest = emulateDiscoveryStepForTestClass<FirstMethodsWaitsOthersTest>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<FirstMethodsWaitsOthersTest>()
 
         FirstMethodsWaitsOthersTest.reset()
         FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(true)
@@ -410,7 +411,7 @@ class CorounitTestEngineTest {
     @Test
     fun `success and failed tests reported to junit listener`() {
         val trapListener = EngineExecutionListenerTrap()
-        val executionRequest = emulateDiscoveryStepForTestClass<MyTestForListener>(trapListener)
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestForListener>(trapListener)
 
         MyTestForListener.shouldFailedTestFail.set(true)
         engine.execute(executionRequest)
@@ -435,7 +436,7 @@ class CorounitTestEngineTest {
     fun `plugin object located in same package is invoked`() {
         CorounitConfig.reset()
 
-        val executionRequest = emulateDiscoveryStepForTestClass<MyTestClassForPlugin>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestClassForPlugin>()
         engine.execute(executionRequest)
 
         CorounitConfig.beforeAllTestClassesInvocationCount.get().shouldBeGreaterThan(0)
@@ -445,7 +446,7 @@ class CorounitTestEngineTest {
     @Test
     fun `new test instance created for each method invocation by default`() {
 
-        val executionRequest = emulateDiscoveryStepForTestClass<TestClassInstancePerMethodInvocation>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<TestClassInstancePerMethodInvocation>()
         TestClassInstancePerMethodInvocation.reset()
 
         engine.execute(executionRequest)
@@ -464,7 +465,7 @@ class CorounitTestEngineTest {
     @Test
     fun `single instance create for all method invocation if annotation present`() {
 
-        val executionRequest = emulateDiscoveryStepForTestClass<TestClassInstancePerClassInvocationWithAnnotation>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<TestClassInstancePerClassInvocationWithAnnotation>()
         TestClassInstancePerClassInvocationWithAnnotation.reset()
         engine.execute(executionRequest)
 
@@ -483,7 +484,7 @@ class CorounitTestEngineTest {
 
     @Test
     fun `beforeEach and afterEach invoked in test suite without annotations`() {
-        val executionRequest = emulateDiscoveryStepForTestClass<BeforeAfterEach>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<BeforeAfterEach>()
 
         BeforeAfterEach.reset()
         engine.execute(executionRequest)
@@ -497,7 +498,7 @@ class CorounitTestEngineTest {
 
     @Test
     fun `disabled test does not start`() {
-        val executionRequest = emulateDiscoveryStepForTestClass<TestWithDisabledMethod>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<TestWithDisabledMethod>()
 
         CorounitConfig.reset()
         TestWithDisabledMethod.reset()
@@ -511,7 +512,7 @@ class CorounitTestEngineTest {
 
     @Test
     fun `beforeEach and afterEach invoked in test suite with annotations`() {
-        val executionRequest = emulateDiscoveryStepForTestClass<BeforeAfterEachWithAnnotations>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<BeforeAfterEachWithAnnotations>()
 
         BeforeAfterEachWithAnnotations.reset()
         engine.execute(executionRequest)
@@ -525,41 +526,5 @@ class CorounitTestEngineTest {
         BeforeAfterEachWithAnnotations.afterAllState.shouldBeEmpty()
     }
 
-    private inline fun <reified T> mockDiscoveryRequest(): EngineDiscoveryRequest {
-        val discoveryRequest = mockk<EngineDiscoveryRequest>()
-        every { discoveryRequest.getSelectorsByType(MethodSelector::class.java) } returns mutableListOf()
 
-        val selector = mockk<ClassSelector>()
-
-        val selectorClass = slot<Class<DiscoverySelector>>()
-        every { discoveryRequest.getSelectorsByType<DiscoverySelector>( capture(selectorClass) ) } answers {
-            if(selectorClass.captured ==  ClassSelector::class.java){
-                mutableListOf<DiscoverySelector>(selector)
-            } else {
-                emptyList()
-            }
-        }
-        every { discoveryRequest.getFiltersByType<DiscoveryFilter<*>>(any()) } returns emptyList()
-
-        every { selector.javaClass } returns T::class.java
-        every { selector.className } returns T::class.java.name
-
-        return discoveryRequest
-    }
-
-    private fun mockExecutionRequest(descriptor: TestDescriptor, listener: EngineExecutionListener? = null): ExecutionRequest {
-        val executionRequest = mockk<ExecutionRequest>(relaxed = true)
-        val config = mockk<ConfigurationParameters>(relaxed = true)
-        every { executionRequest.configurationParameters } returns config
-        every { executionRequest.rootTestDescriptor } returns descriptor
-        every { executionRequest.engineExecutionListener } returns (listener ?: mockk(relaxed = true))
-        every { config.get(any()) } returns Optional.empty()
-        return executionRequest
-    }
-
-    private inline fun <reified T> emulateDiscoveryStepForTestClass(listener: EngineExecutionListener? = null): ExecutionRequest {
-        val discoveryRequest = mockDiscoveryRequest<T>()
-        val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
-        return mockExecutionRequest(descriptor, listener)
-    }
 }
