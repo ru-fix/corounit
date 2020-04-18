@@ -141,7 +141,7 @@ class CorounitTestEngine : TestEngine {
             val globalContext = pluginDispatcher.beforeAllTestClasses(coroutineContext)
             withContext(globalContext) {
 
-                TestRunner(pluginDispatcher,
+                ExecutionRunner(pluginDispatcher,
                         request.engineExecutionListener,
                         request.configurationParameters).executeExecution(execDesc)
 

@@ -18,12 +18,12 @@ import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
 import kotlin.reflect.full.findAnnotation
 
-class TestRunner(
+class ExecutionRunner(
         private val pluginDispatcher: PluginDispatcher,
         private val listener: EngineExecutionListener,
         private val configurationParameters: ConfigurationParameters) {
 
-    private suspend fun executeDescriptor(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Throwable? {
+    private suspend fun notifyListenerSupervisorScope(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Throwable? {
         listener.executionStarted(descriptor)
         try {
             supervisorScope {
@@ -78,7 +78,7 @@ class TestRunner(
 
         val pluginsClassContext = pluginDispatcher.beforeTestClass(classContext)
 
-        executeDescriptor(classDesc) {
+        notifyListenerSupervisorScope(classDesc) {
             when (testInstanceLifecycle) {
                 PER_CLASS -> {
                     val testInstance = pluginDispatcher.createTestClassInstance(classDesc.clazz)
@@ -138,7 +138,7 @@ class TestRunner(
 
         launch(pluginsMethodContext) {
 
-            val thr = executeDescriptor(methodDesc) {
+            val thr = notifyListenerSupervisorScope(methodDesc) {
                 try {
                     beforeEachMethod?.invokeAspectMethodOfTestInstnace(testInstance)
                     methodDesc.method.callSuspend(testInstance)
@@ -153,7 +153,7 @@ class TestRunner(
     }
 
     suspend fun executeExecution(execDesc: CorounitExecutionDescriptor) {
-        executeDescriptor(execDesc) {
+        notifyListenerSupervisorScope(execDesc) {
             for (classDesc in execDesc.children.mapNotNull { it as? CorounitClassDescriptior }) {
                 launch {
                     executeClass(classDesc)
