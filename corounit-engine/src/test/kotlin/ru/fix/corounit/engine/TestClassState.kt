@@ -18,6 +18,7 @@ open class TestClassState {
         beforeEach.clear()
         afterEach.clear()
         testSequences.clear()
+        testIds.clear()
         beforeAll.clear()
         afterAll.clear()
     }
