@@ -24,16 +24,16 @@ class ClassRunner(
     private val afterEachMethod: KCallable<*>?
 
     init {
-        val classWithBeforeAndAfterMethods = when (testInstanceLifecycle) {
+        val classWithBeforeAllAndAfterAllMethods = when (testInstanceLifecycle) {
             TestInstance.Lifecycle.PER_CLASS -> classDesc.clazz
             TestInstance.Lifecycle.PER_METHOD -> classDesc.clazz.companionObject
         }
 
-        beforeAllMethod = classWithBeforeAndAfterMethods?.members
+        beforeAllMethod = classWithBeforeAllAndAfterAllMethods?.members
                 ?.filter { it.name == "beforeAll" || it.findAnnotation<BeforeAll>() != null }
                 ?.firstOrNull { it.parameters.size == 1 }
 
-        afterAllMethod = classWithBeforeAndAfterMethods?.members
+        afterAllMethod = classWithBeforeAllAndAfterAllMethods?.members
                 ?.filter { it.name == "afterAll" || it.findAnnotation<AfterAll>() != null }
                 ?.firstOrNull { it.parameters.size == 1 }
 
@@ -66,7 +66,9 @@ class ClassRunner(
 
                 }
                 TestInstance.Lifecycle.PER_METHOD -> {
-                    classDesc.clazz.companionObjectInstance?.let { beforeAllMethod?.invokeAspectMethodOnTestInstnace(it) }
+                    classDesc.clazz.companionObjectInstance?.let {
+                        beforeAllMethod?.invokeAspectMethodOnTestInstnace(it)
+                    }
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
@@ -75,7 +77,9 @@ class ClassRunner(
                         }
                     }
 
-                    classDesc.clazz.companionObjectInstance?.let { afterAllMethod?.invokeAspectMethodOnTestInstnace(it) }
+                    classDesc.clazz.companionObjectInstance?.let {
+                        afterAllMethod?.invokeAspectMethodOnTestInstnace(it)
+                    }
                 }
             }
         }
