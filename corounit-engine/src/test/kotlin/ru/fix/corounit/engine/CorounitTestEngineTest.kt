@@ -60,7 +60,7 @@ class MyTestWithAnnotations {
  * as separate test suite.
  * When we use this class as a test source we enable trapping behaviour explicitly.
  */
-class FirstMethodsWaitsOthersTest {
+class MyTestFirstMethodsWaitsOthers {
     companion object : TestClassState() {
         val shouldFirstMethodWaitOthers = AtomicBoolean()
     }
@@ -94,49 +94,6 @@ class FirstMethodsWaitsOthersTest {
     }
 }
 
-/**
- * This test class detected by JunitTestEngine and executed during build
- * as separate test suite.
- * When we use this class as a test source we enable trapping behaviour explicitly.
- */
-class MyTestForListener {
-    companion object {
-        val shouldFailedTestFail = AtomicBoolean()
-    }
-
-    @Test
-    suspend fun mySuccessTest() {
-    }
-
-    @Test
-    suspend fun myFailedTest() {
-        if (shouldFailedTestFail.get()) {
-            throw Exception("oops")
-        }
-    }
-
-}
-
-
-class EngineExecutionListenerTrap : EngineExecutionListener {
-    var reportedTests = ConcurrentLinkedDeque<Pair<TestDescriptor, TestExecutionResult>>()
-
-    override fun executionFinished(descriptor: TestDescriptor, result: TestExecutionResult) {
-        reportedTests.addLast(descriptor to result)
-    }
-
-    override fun reportingEntryPublished(p0: TestDescriptor?, p1: ReportEntry?) {
-    }
-
-    override fun executionSkipped(p0: TestDescriptor?, p1: String?) {
-    }
-
-    override fun executionStarted(p0: TestDescriptor?) {
-    }
-
-    override fun dynamicTestRegistered(p0: TestDescriptor?) {
-    }
-}
 
 object CorounitConfig : CorounitPlugin, CorounitPluginsProvider {
     val beforeAllTestClassesInvocationCount = AtomicInteger()
@@ -341,41 +298,19 @@ class CorounitTestEngineTest {
 
     @Test
     fun `first test method waits others to complete and whole suite passes without timeout`() {
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<FirstMethodsWaitsOthersTest>()
+        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestFirstMethodsWaitsOthers>()
 
-        FirstMethodsWaitsOthersTest.reset()
-        FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(true)
+        MyTestFirstMethodsWaitsOthers.reset()
+        MyTestFirstMethodsWaitsOthers.shouldFirstMethodWaitOthers.set(true)
         engine.execute(executionRequest)
-        FirstMethodsWaitsOthersTest.shouldFirstMethodWaitOthers.set(false)
+        MyTestFirstMethodsWaitsOthers.shouldFirstMethodWaitOthers.set(false)
 
-        FirstMethodsWaitsOthersTest.beforeEachState.shouldContainExactly()
-        FirstMethodsWaitsOthersTest.testSequencesState.shouldContainExactlyInAnyOrder(1, 2, 3)
-        FirstMethodsWaitsOthersTest.afterEachState.shouldContainExactly()
+        MyTestFirstMethodsWaitsOthers.beforeEachState.shouldContainExactly()
+        MyTestFirstMethodsWaitsOthers.testSequencesState.shouldContainExactlyInAnyOrder(1, 2, 3)
+        MyTestFirstMethodsWaitsOthers.afterEachState.shouldContainExactly()
     }
 
-    @Test
-    fun `success and failed tests reported to junit listener`() {
-        val trapListener = EngineExecutionListenerTrap()
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestForListener>(trapListener)
 
-        MyTestForListener.shouldFailedTestFail.set(true)
-        engine.execute(executionRequest)
-
-        trapListener.reportedTests
-                .single {
-                    it.first.displayName.contains(MyTestForListener::mySuccessTest.name)
-                }
-                .second.status.shouldBe(TestExecutionResult.Status.SUCCESSFUL)
-
-        trapListener.reportedTests
-                .single {
-                    it.first.displayName.contains(MyTestForListener::myFailedTest.name)
-                }
-                .second.apply {
-            status.shouldBe(TestExecutionResult.Status.FAILED)
-            throwable.shouldNotBeNull()
-        }
-    }
 
     @Test
     fun `plugin object located in same package is invoked`() {
