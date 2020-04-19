@@ -355,13 +355,26 @@ gradle -p corounit-example clean test -PincludeTags="slow"
 ### @TestInstance annotation
 Works in similar way
 
-### @BeforeAll, @BeforeEach, @AfterEach, @AfterAll
+### @BeforeAll, @BeforeEach, @AfterEach, @AfterAll annotations
 Works in similar way.
 Can be declared in Companion object.
 In corounit annotations are optional.
 Suspendable methods supported.
 See details in related paragraph.  
 
+### @ParameterizedTest annotation not supported yet.
+You can use `parameterized` function from `allure` module.
+```kotlin
+@Test
+suspend fun `test with parameters`() = parameterized(
+        row(1, "one"),
+        row(2, "two"),
+        row(3, "three"),
+        row(4, null)
+) { number, text ->
+    println("number $number is a $text")
+}
+```
 
 ## Allure reporting
 Corounit provides allure (http://allure.qatools.ru/) reporting integration via `corounit-allure` plugin.
