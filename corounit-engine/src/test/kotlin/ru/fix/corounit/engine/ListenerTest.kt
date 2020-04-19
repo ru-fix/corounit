@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ListenerTest {
-    private class MyTestForListener {
+    class MyTestForListener {
         companion object {
             /**
              * This test class detected by JunitTestEngine and executed during build
