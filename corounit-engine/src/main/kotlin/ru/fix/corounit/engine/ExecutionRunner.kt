@@ -23,7 +23,7 @@ class ExecutionRunner(
         private val listener: EngineExecutionListener,
         private val configurationParameters: ConfigurationParameters) {
 
-    private suspend fun notifyListenerSupervisorScope(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Throwable? {
+    private suspend fun notifyListenerAndRunInSupervisorScope(descriptor: TestDescriptor, block: suspend CoroutineScope.() -> Unit): Throwable? {
         listener.executionStarted(descriptor)
         try {
             supervisorScope {
@@ -78,7 +78,7 @@ class ExecutionRunner(
 
         val pluginsClassContext = pluginDispatcher.beforeTestClass(classContext)
 
-        notifyListenerSupervisorScope(classDesc) {
+        notifyListenerAndRunInSupervisorScope(classDesc) {
             when (testInstanceLifecycle) {
                 PER_CLASS -> {
                     val testInstance = pluginDispatcher.createTestClassInstance(classDesc.clazz)
@@ -138,7 +138,7 @@ class ExecutionRunner(
 
         launch(pluginsMethodContext) {
 
-            val thr = notifyListenerSupervisorScope(methodDesc) {
+            val thr = notifyListenerAndRunInSupervisorScope(methodDesc) {
                 try {
                     beforeEachMethod?.invokeAspectMethodOfTestInstnace(testInstance)
                     methodDesc.method.callSuspend(testInstance)
@@ -153,7 +153,7 @@ class ExecutionRunner(
     }
 
     suspend fun executeExecution(execDesc: CorounitExecutionDescriptor) {
-        notifyListenerSupervisorScope(execDesc) {
+        notifyListenerAndRunInSupervisorScope(execDesc) {
             for (classDesc in execDesc.children.mapNotNull { it as? CorounitClassDescriptior }) {
                 launch {
                     executeClass(classDesc)
