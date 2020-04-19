@@ -1,4 +1,3 @@
-
 plugins {
     java
     kotlin("jvm")
@@ -12,9 +11,7 @@ dependencies {
     api(Libs.kotlin_stdlib)
     api(Libs.kotlin_reflect)
 
-    api(Libs.junit_engine)
-    api(Libs.junit_api)
-    api(Libs.junit_params)
+
 
     api(Libs.mu_kotlin_logging)
 
@@ -22,5 +19,8 @@ dependencies {
     implementation(Libs.slf4j_over_log4j)
 
     testImplementation(Libs.kotlin_test)
-
+    testImplementation(Libs.junit_engine)
+    testImplementation(Libs.junit_api)
+    testImplementation(Libs.junit_params)
 }
+

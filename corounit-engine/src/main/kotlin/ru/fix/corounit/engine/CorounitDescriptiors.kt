@@ -1,6 +1,9 @@
 package ru.fix.corounit.engine
 
+import org.junit.jupiter.api.Tag
+import org.junit.platform.commons.util.AnnotationUtils
 import org.junit.platform.engine.TestDescriptor
+import org.junit.platform.engine.TestTag
 import org.junit.platform.engine.UniqueId
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor
 import org.junit.platform.engine.support.descriptor.ClassSource
@@ -28,6 +31,13 @@ class CorounitClassDescriptior(
         clazz.qualifiedName ?: clazz.jvmName,
         ClassSource.from(clazz.java)) {
 
+    private val tags = AnnotationUtils.findRepeatableAnnotations(clazz.java, Tag::class.java)
+            .map {
+                TestTag.create(it.value)
+            }.toMutableSet()
+
+    override fun getTags() = tags
+
     override fun getType(): TestDescriptor.Type = TestDescriptor.Type.CONTAINER
 
     val methodDescriptors: List<CorounitMethodDescriptior>
@@ -45,6 +55,15 @@ class CorounitMethodDescriptior(
         method.name,
         MethodSource.from(method.javaMethod)) {
 
+    private val tags = AnnotationUtils.findRepeatableAnnotations(method.javaMethod!!, Tag::class.java)
+            .map {
+                TestTag.create(it.value)
+            }.toMutableSet()
+
+    override fun getTags() = tags
+
     override fun getType(): TestDescriptor.Type = TestDescriptor.Type.TEST
+
+
 }
 

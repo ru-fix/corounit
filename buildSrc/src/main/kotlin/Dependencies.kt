@@ -42,6 +42,9 @@ object Libs {
     const val junit_api = "org.junit.jupiter:junit-jupiter-api:${Vers.junit}"
     const val junit_params = "org.junit.jupiter:junit-jupiter-params:${Vers.junit}"
     const val junit_engine = "org.junit.jupiter:junit-jupiter-engine:${Vers.junit}"
+    const val junit_launcher = "org.junit.platform:junit-platform-launcher:1.6.2"
+
+
 
     const val kotlin_test = "io.kotlintest:kotlintest-runner-junit5:3.4.2"
 

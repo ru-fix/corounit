@@ -9,7 +9,6 @@ import org.junit.platform.engine.*
 import org.junit.platform.engine.discovery.*
 import java.util.*
 import java.util.concurrent.Executors
-import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Predicate
@@ -38,6 +37,7 @@ class CorounitTestEngine : TestEngine {
                     .mapNotNull { it.kotlinFunction }
                     .any()
         }
+
 
         request.getSelectorsByType(MethodSelector::class.java).forEach { selector ->
             val method = selector.javaMethod.kotlinFunction ?: return@forEach
@@ -128,7 +128,6 @@ class CorounitTestEngine : TestEngine {
     override fun execute(request: ExecutionRequest) {
 
         val config = Configuration(request.configurationParameters)
-
 
         log.debug { "Corounit uses parallelism level: ${config.parallelism}" }
 

@@ -17,8 +17,8 @@ object CorounitConfig: CorounitPlugin {
 
     override fun <T: Any>createTestClassInstance(testClass: KClass<T>):T {
         val instance = testClass.createInstance()
-        if(instance is CorounitConfigTest) {
-            CorounitConfigTest::injectData.invoke(instance, "injected data")
+        if(instance is UseDependencyInjectionByCorounitConfigTest) {
+            UseDependencyInjectionByCorounitConfigTest::injectData.invoke(instance, "injected data")
         }
         return instance
     }
