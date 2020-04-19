@@ -314,9 +314,53 @@ You can add corounit properties within default JUnit property file at `src/test/
  Explicit behaviour can be set via `@TestInstance(PER_CLASS)` test class annotation. Default value is `per_method`.
 
 ## JUnit friendship
+
+### @Test annotation
 Corounit Engine will look for `suspendable` test methods marked with `@Test` annotation and run them. 
 All non suspendable regular methods marked with `@Test` will stay untouched.
-Default JUnit Engine will launch them after Corounit Engine finish running suspendable tests.   
+Default JUnit Engine will launch them after Corounit Engine finish running suspendable tests.  
+
+### @Tag annotation
+`@Tag` annotation works in a same way as in default JUnit Engine.  
+As in regular gradle junit suite you can configure gradle to receive tag filter from command line.
+```kotlin
+tasks {
+    withType<Test> {
+        useJUnitPlatform(){
+            val INCLUDE_TAGS = "includeTags"
+            val EXCLUDE_TAGS = "excludeTags"
+
+            if(project.hasProperty(INCLUDE_TAGS)) {
+                includeTags(project.properties[INCLUDE_TAGS] as String)
+            }
+            if(project.hasProperty(EXCLUDE_TAGS)) {
+                excludeTags(project.properties[EXCLUDE_TAGS] as String)
+            }
+        }
+
+        maxParallelForks = 10
+
+        testLogging {
+            events(TestLogEvent.PASSED, TestLogEvent.FAILED, TestLogEvent.SKIPPED)
+            showStandardStreams = true
+            exceptionFormat = TestExceptionFormat.FULL
+        }
+    }
+}
+```
+```shell script
+gradle -p corounit-example clean test -PincludeTags="slow"
+``` 
+
+### @TestInstance annotation
+Works in similar way
+
+### @BeforeAll, @BeforeEach, @AfterEach, @AfterAll
+Works in similar way.
+Can be declared in Companion object.
+In corounit annotations are optional.
+Suspendable methods supported.
+See details in related paragraph.  
 
 
 ## Allure reporting
