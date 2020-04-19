@@ -127,23 +127,24 @@ class CorounitTestEngine : TestEngine {
 
     override fun execute(request: ExecutionRequest) {
 
-        val parallelism = request.configurationParameters.get("corounit.execution.parallelism")
-                .map { it?.toInt() }
-                .orElse(Math.max(ForkJoinPool.getCommonPoolParallelism(), 2))!!
+        val config = Configuration(request.configurationParameters)
 
-        log.debug { "Corounit uses parallelism level: $parallelism" }
+
+        log.debug { "Corounit uses parallelism level: ${config.parallelism}" }
 
         val execDesc = request.rootTestDescriptor as CorounitExecutionDescriptor
         val pluginDispatcher = PluginDispatcher(execDesc)
 
-        runBlockingInPool(parallelism) {
+        runBlockingInPool(config.parallelism) {
 
             val globalContext = pluginDispatcher.beforeAllTestClasses(coroutineContext)
             withContext(globalContext) {
 
-                ExecutionRunner(pluginDispatcher,
+                val context = ExecutionContext(pluginDispatcher,
                         request.engineExecutionListener,
-                        request.configurationParameters).executeExecution(execDesc)
+                        config)
+
+                ExecutionRunner(context).executeExecution(execDesc)
 
                 pluginDispatcher.afterAllTestClasses(globalContext)
             }
