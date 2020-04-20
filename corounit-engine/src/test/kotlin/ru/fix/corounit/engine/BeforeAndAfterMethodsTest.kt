@@ -212,7 +212,7 @@ class BeforeAndAfterMethodsTest {
         with(BeforeEachWithException){
             beforeEachState.shouldContainExactly(1)
             methodIdsState.shouldBeEmpty()
-            afterEachState.shouldBeEmpty()
+            afterEachState.shouldContainExactly(2)
         }
 
     }
