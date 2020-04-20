@@ -177,7 +177,7 @@ class BeforeAndAfterMethodsTest {
         suspend fun beforeEach() {
             beforeEachInvoked()
             if(enabledFailing.get()) {
-                throw Exception("myException")
+                throw Throwable("myThrowable")
             }
 
             @Suppress("UNREACHABLE_CODE")
@@ -212,7 +212,7 @@ class BeforeAndAfterMethodsTest {
             descriptor.displayName.shouldContain(BeforeEachWithException::testMethod.name)
             result.status.shouldBe(TestExecutionResult.Status.FAILED)
             result.throwable.isPresent.shouldBeTrue()
-            result.throwable.get().message.shouldContain("myException")
+            result.throwable.get().message.shouldContain("myThrowable")
         }
 
         with(BeforeEachWithException){
@@ -223,4 +223,24 @@ class BeforeAndAfterMethodsTest {
 
     }
 
+}
+
+@TestInstance(PER_CLASS)
+class Foo{
+    @BeforeEach
+    fun beforeAll(){
+//        throw Throwable("ooops")
+    }
+
+    @Test
+    fun test(){
+        println("test")
+        throw Throwable("ooop")
+    }
+
+    @AfterEach
+    fun afterAll(){
+        println("afterAll")
+        throw Throwable("bzzzz")
+    }
 }

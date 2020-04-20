@@ -85,6 +85,7 @@ class ClassRunner(
         }
         context.pluginDispatcher.afterTestClass(pluginsClassContext)
     }
+
     private fun resolveTestInstanceLifecycle(classDesc: CorounitClassDescriptior): TestInstance.Lifecycle {
         val annotationLifecycle = classDesc.clazz.findAnnotation<TestInstance>()?.value
         if (annotationLifecycle != null) return annotationLifecycle
@@ -115,13 +116,31 @@ class ClassRunner(
         launch(pluginsMethodContext) {
 
             val thr = context.notifyListenerAndRunInSupervisorScope(methodDesc) {
+
+                var testFailReason: Throwable? = null
                 try {
                     beforeEachMethod?.invokeAspectMethodOnTestInstnace(testInstance)
-                    methodDesc.method.callSuspend(testInstance)
-                } catch (invocationTargetExc: InvocationTargetException) {
-                    throw invocationTargetExc.cause ?: invocationTargetExc
+                    try {
+                        methodDesc.method.callSuspend(testInstance)
+                    } catch (invocationTargetExc: InvocationTargetException) {
+                        throw invocationTargetExc.cause ?: invocationTargetExc
+                    }
+                }catch (thr: Throwable){
+                    testFailReason = thr
                 } finally {
-                    afterEachMethod?.invokeAspectMethodOnTestInstnace(testInstance)
+                    try {
+                        afterEachMethod?.invokeAspectMethodOnTestInstnace(testInstance)
+                    }catch (thr: Throwable){
+                        if(testFailReason == null){
+                            testFailReason = thr
+                        } else {
+                            log.error(thr, "hide exception")
+                        }
+                    }
+                }
+
+                if(testFailReason != null){
+                    throw testFailReason
                 }
             }
             context.pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
