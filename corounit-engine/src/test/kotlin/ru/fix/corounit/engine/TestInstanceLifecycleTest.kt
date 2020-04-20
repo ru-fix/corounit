@@ -5,11 +5,14 @@ import io.kotlintest.matchers.collections.shouldBeEmpty
 import io.kotlintest.matchers.collections.shouldContainExactly
 import io.kotlintest.matchers.collections.shouldHaveSize
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import java.util.concurrent.ConcurrentLinkedDeque
 
 class TestInstanceLifecycleTest {
+    private val engine = EngineEmulator()
+
     class TestClassInstancePerMethodInvocation {
-        companion object : TestClassState(){
+        companion object : TestClassState() {
             val instances = ConcurrentLinkedDeque<TestClassInstancePerMethodInvocation>()
             override fun reset() {
                 super.reset()
@@ -29,7 +32,7 @@ class TestInstanceLifecycleTest {
             testMethodInvoked(2)
         }
 
-        suspend fun beforeEach(){
+        suspend fun beforeEach() {
             beforeEachInvoked()
         }
 
@@ -42,7 +45,6 @@ class TestInstanceLifecycleTest {
         }
     }
 
-    private val engine = EngineEmulator()
 
     @Test
     fun `new test instance created for each method invocation by default`() {
@@ -58,9 +60,42 @@ class TestInstanceLifecycleTest {
 
         TestClassInstancePerMethodInvocation.beforeAllState.shouldContainExactly()
         TestClassInstancePerMethodInvocation.beforeEachState.shouldHaveSize(2)
-        TestClassInstancePerMethodInvocation.testSequencesState.shouldHaveSize(2)
+        TestClassInstancePerMethodInvocation.methodSequencesState.shouldHaveSize(2)
         TestClassInstancePerMethodInvocation.afterEachState.shouldBeEmpty()
         TestClassInstancePerMethodInvocation.afterAllState.shouldBeEmpty()
+    }
+
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class TestClassInstancePerClassInvocationWithAnnotation {
+        companion object : TestClassState() {
+            val instances = ConcurrentLinkedDeque<TestClassInstancePerClassInvocationWithAnnotation>()
+
+            override fun reset() {
+                super.reset()
+                instances.clear()
+            }
+        }
+
+        suspend fun beforeAll() {
+            beforeAllInvoked()
+
+        }
+
+        fun afterAll() {
+            afterAllInvoked()
+        }
+
+        @Test
+        suspend fun firstMethod() {
+            instances.addLast(this)
+            testMethodInvoked(1)
+        }
+
+        @Test
+        suspend fun secondMethod() {
+            instances.addLast(this)
+            testMethodInvoked(2)
+        }
     }
 
     @Test
@@ -77,7 +112,7 @@ class TestInstanceLifecycleTest {
 
         TestClassInstancePerClassInvocationWithAnnotation.beforeAllState.shouldContainExactly(1)
         TestClassInstancePerClassInvocationWithAnnotation.beforeEachState.shouldContainExactly()
-        TestClassInstancePerClassInvocationWithAnnotation.testSequencesState.shouldContainExactly(2, 3)
+        TestClassInstancePerClassInvocationWithAnnotation.methodSequencesState.shouldContainExactly(2, 3)
         TestClassInstancePerClassInvocationWithAnnotation.afterEachState.shouldContainExactly()
         TestClassInstancePerClassInvocationWithAnnotation.afterAllState.shouldContainExactly(4)
 

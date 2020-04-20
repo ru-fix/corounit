@@ -3,10 +3,8 @@ package ru.fix.corounit.engine
 import io.kotlintest.matchers.collections.shouldContainExactly
 import io.kotlintest.matchers.numerics.shouldBeGreaterThan
 import io.kotlintest.matchers.types.shouldNotBeNull
-import io.kotlintest.shouldBe
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.util.concurrent.atomic.AtomicBoolean
 
 class DisabledMethodTest{
 
@@ -36,7 +34,7 @@ class DisabledMethodTest{
 
         engine.execute(executionRequest)
 
-        TestWithDisabledMethod.testIdsState.shouldContainExactly(2)
+        TestWithDisabledMethod.methodIdsState.shouldContainExactly(2)
         CorounitConfig.skipMethodsInvocationCount.get().shouldBeGreaterThan(0)
         CorounitConfig.skipTestMethodLog
                 .find { it.testMethod.name == TestWithDisabledMethod::test1.name }

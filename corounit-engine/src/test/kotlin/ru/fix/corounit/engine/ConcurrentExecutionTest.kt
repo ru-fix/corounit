@@ -22,11 +22,11 @@ class ConcurrentExecutionTest{
         private fun concurrentTestInvoked() {
             val amIaFirstInvokedTest = testMethodInvoked(1) == 1
             if (amIaFirstInvokedTest) {
-                while (shouldFirstMethodWaitOthers.get() && !testSequencesState.containsAll(listOf(2, 3))) {
+                while (shouldFirstMethodWaitOthers.get() && !methodSequencesState.containsAll(listOf(2, 3))) {
                     Thread.sleep(100)
                     log.info {
                         "Waiting for test state to contains [2, 3]." +
-                                " Current state: $testSequencesState"
+                                " Current state: $methodSequencesState"
                     }
                 }
             }
@@ -62,7 +62,7 @@ class ConcurrentExecutionTest{
         MyTestFirstMethodsWaitsOthers.shouldFirstMethodWaitOthers.set(false)
 
         MyTestFirstMethodsWaitsOthers.beforeEachState.shouldContainExactly()
-        MyTestFirstMethodsWaitsOthers.testSequencesState.shouldContainExactlyInAnyOrder(1, 2, 3)
+        MyTestFirstMethodsWaitsOthers.methodSequencesState.shouldContainExactlyInAnyOrder(1, 2, 3)
         MyTestFirstMethodsWaitsOthers.afterEachState.shouldContainExactly()
     }
 

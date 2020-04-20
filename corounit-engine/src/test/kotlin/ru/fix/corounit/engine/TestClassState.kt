@@ -9,47 +9,47 @@ open class TestClassState {
     private val beforeAll = ConcurrentLinkedDeque<Int>()
     private val afterAll = ConcurrentLinkedDeque<Int>()
 
-    private val testSequences = ConcurrentLinkedDeque<Int>()
-    private val testIds = ConcurrentLinkedDeque<Int>()
+    private val methodSequences = ConcurrentLinkedDeque<Int>()
+    private val methodIds = ConcurrentLinkedDeque<Int>()
     private val counter = AtomicInteger()
 
     open fun reset() {
         counter.set(0)
         beforeEach.clear()
         afterEach.clear()
-        testSequences.clear()
-        testIds.clear()
+        methodSequences.clear()
+        methodIds.clear()
         beforeAll.clear()
         afterAll.clear()
     }
 
-    fun beforeEachInvoked() {
+    protected fun beforeEachInvoked() {
         beforeEach.addLast(counter.incrementAndGet())
     }
 
-    fun beforeAllInvoked() {
+    protected fun beforeAllInvoked() {
         beforeAll.addLast(counter.incrementAndGet())
     }
 
-    fun testMethodInvoked(id: Int): Int {
+    protected fun testMethodInvoked(id: Int): Int {
         val count = counter.incrementAndGet()
-        testSequences.addLast(count)
-        testIds.addLast(id)
+        methodSequences.addLast(count)
+        methodIds.addLast(id)
         return count
     }
 
-    fun afterEachInvoked() {
+    protected fun afterEachInvoked() {
         afterEach.addLast(counter.incrementAndGet())
     }
 
-    fun afterAllInvoked() {
+    protected fun afterAllInvoked() {
         afterAll.addLast(counter.incrementAndGet())
     }
 
     val beforeEachState get() = beforeEach.toList()
     val beforeAllState get() = beforeAll.toList()
-    val testSequencesState get() = testSequences.toList()
-    val testIdsState get() = testIds.toList()
+    val methodSequencesState get() = methodSequences.toList()
+    val methodIdsState get() = methodIds.toList()
     val afterEachState get() = afterEach.toList()
     val afterAllState get() = afterAll.toList()
 }

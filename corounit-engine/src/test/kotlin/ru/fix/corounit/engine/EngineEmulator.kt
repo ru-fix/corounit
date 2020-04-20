@@ -10,6 +10,8 @@ import java.util.*
 
 class EngineEmulator {
     val engine: CorounitTestEngine = CorounitTestEngine()
+    val trapListener = EngineExecutionTrapListener()
+
 
     inline fun <reified T> mockDiscoveryRequest(): EngineDiscoveryRequest {
         val discoveryRequest = mockk<EngineDiscoveryRequest>()
@@ -33,20 +35,20 @@ class EngineEmulator {
         return discoveryRequest
     }
 
-    fun mockExecutionRequest(descriptor: TestDescriptor, listener: EngineExecutionListener? = null): ExecutionRequest {
+    fun mockExecutionRequest(descriptor: TestDescriptor): ExecutionRequest {
         val executionRequest = mockk<ExecutionRequest>(relaxed = true)
         val config = mockk<ConfigurationParameters>(relaxed = true)
         every { executionRequest.configurationParameters } returns config
         every { executionRequest.rootTestDescriptor } returns descriptor
-        every { executionRequest.engineExecutionListener } returns (listener ?: mockk(relaxed = true))
+        every { executionRequest.engineExecutionListener } returns trapListener
         every { config.get(any()) } returns Optional.empty()
         return executionRequest
     }
 
-    inline fun <reified T> emulateDiscoveryStepForTestClass(listener: EngineExecutionListener? = null): ExecutionRequest {
+    inline fun <reified T> emulateDiscoveryStepForTestClass(): ExecutionRequest {
         val discoveryRequest = mockDiscoveryRequest<T>()
         val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
-        return mockExecutionRequest(descriptor, listener)
+        return mockExecutionRequest(descriptor)
     }
 
     fun execute(request: ExecutionRequest) = engine.execute(request)
