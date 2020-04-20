@@ -14,6 +14,7 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.platform.engine.TestDescriptor
 import org.junit.platform.engine.TestExecutionResult
+import java.util.concurrent.atomic.AtomicBoolean
 
 private val log = KotlinLogging.logger { }
 
@@ -167,13 +168,17 @@ class BeforeAndAfterMethodsTest {
     }
 
     class BeforeEachWithException {
-        companion object : TestClassState()
+        companion object : TestClassState(){
+            val enabledFailing = AtomicBoolean(false)
+        }
 
         lateinit var failedToInitialize: String
 
         suspend fun beforeEach() {
             beforeEachInvoked()
-            throw Exception("myException")
+            if(enabledFailing.get()) {
+                throw Exception("myException")
+            }
 
             @Suppress("UNREACHABLE_CODE")
             failedToInitialize = "4"
@@ -194,6 +199,7 @@ class BeforeAndAfterMethodsTest {
     fun `beforeEach throws Exception should stop test`() {
          val executionRequest = engineEmulator.emulateDiscoveryStepForTestClass<BeforeEachWithException>()
         BeforeEachWithException.reset()
+        BeforeEachWithException.enabledFailing.set(true)
         CorounitConfig.reset()
 
         engineEmulator.execute(executionRequest)
