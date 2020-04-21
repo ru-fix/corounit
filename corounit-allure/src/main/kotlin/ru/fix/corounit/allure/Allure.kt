@@ -6,8 +6,11 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.reflect.KClass
 
-inline fun <reified T: Any> createStepClassInstance(): T = createStepClassInstance(T::class)
-fun <T: Any> createStepClassInstance(clazz: KClass<T>): T = AllureAspect.newAspectedInstanceViaSubtyping(clazz)
+inline fun <reified T: Any> createStepClassInstance(vararg args: Any?): T =
+        createStepClassInstance(T::class, *args)
+
+fun <T: Any> createStepClassInstance(clazz: KClass<T>, vararg args: Any?): T =
+        AllureAspect.newAspectedInstanceViaSubtyping(clazz, *args)
 
 suspend operator fun String.invoke(stepBody: suspend CoroutineScope.()->Unit) {
     AllureStep.fromCurrentCoroutineContext().step(this, stepBody)
