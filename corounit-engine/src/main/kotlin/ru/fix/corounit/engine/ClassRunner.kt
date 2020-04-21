@@ -3,13 +3,17 @@ package ru.fix.corounit.engine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import mu.KotlinLogging
 import org.junit.jupiter.api.*
 import java.lang.reflect.InvocationTargetException
 import kotlin.reflect.KCallable
+import kotlin.reflect.KClass
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
 import kotlin.reflect.full.findAnnotation
+
+private val log = KotlinLogging.logger { }
 
 class ClassRunner(
         private val context: ExecutionContext,
@@ -18,13 +22,14 @@ class ClassRunner(
 
     private val testInstanceLifecycle = resolveTestInstanceLifecycle(classDesc)
 
+    private val classWithBeforeAllAndAfterAllMethods: KClass<*>?
     private val beforeAllMethod: KCallable<*>?
     private val afterAllMethod: KCallable<*>?
     private val beforeEachMethod: KCallable<*>?
     private val afterEachMethod: KCallable<*>?
 
     init {
-        val classWithBeforeAllAndAfterAllMethods = when (testInstanceLifecycle) {
+        classWithBeforeAllAndAfterAllMethods = when (testInstanceLifecycle) {
             TestInstance.Lifecycle.PER_CLASS -> classDesc.clazz
             TestInstance.Lifecycle.PER_METHOD -> classDesc.clazz.companionObject
         }
@@ -54,7 +59,7 @@ class ClassRunner(
             when (testInstanceLifecycle) {
                 TestInstance.Lifecycle.PER_CLASS -> {
                     val testInstance = context.pluginDispatcher.createTestClassInstance(classDesc.clazz)
-                    beforeAllMethod?.invokeAspectMethodOnTestInstnace(testInstance)
+                    beforeAllMethod?.invokeMethodOnTestInstance(testInstance)
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
@@ -62,12 +67,12 @@ class ClassRunner(
                         }
                     }
 
-                    afterAllMethod?.invokeAspectMethodOnTestInstnace(testInstance)
+                    afterAllMethod?.invokeMethodOnTestInstance(testInstance)
 
                 }
                 TestInstance.Lifecycle.PER_METHOD -> {
                     classDesc.clazz.companionObjectInstance?.let {
-                        beforeAllMethod?.invokeAspectMethodOnTestInstnace(it)
+                        beforeAllMethod?.invokeMethodOnTestInstance(it)
                     }
 
                     supervisorScope {
@@ -78,7 +83,7 @@ class ClassRunner(
                     }
 
                     classDesc.clazz.companionObjectInstance?.let {
-                        afterAllMethod?.invokeAspectMethodOnTestInstnace(it)
+                        afterAllMethod?.invokeMethodOnTestInstance(it)
                     }
                 }
             }
@@ -91,11 +96,6 @@ class ClassRunner(
         if (annotationLifecycle != null) return annotationLifecycle
 
         return context.configuration.testInstanceLifecycle
-    }
-
-    private suspend fun KCallable<*>.invokeAspectMethodOnTestInstnace(testInstance: Any) {
-        if (isSuspend) callSuspend(testInstance)
-        else call(testInstance)
     }
 
     private suspend fun CoroutineScope.executeMethod(
@@ -119,31 +119,36 @@ class ClassRunner(
 
                 var testFailReason: Throwable? = null
                 try {
-                    beforeEachMethod?.invokeAspectMethodOnTestInstnace(testInstance)
-                    try {
-                        methodDesc.method.callSuspend(testInstance)
-                    } catch (invocationTargetExc: InvocationTargetException) {
-                        throw invocationTargetExc.cause ?: invocationTargetExc
-                    }
-                }catch (thr: Throwable){
+                    beforeEachMethod?.invokeMethodOnTestInstance(testInstance)
+                    methodDesc.method.invokeMethodOnTestInstance(testInstance)
+                } catch (thr: Throwable) {
                     testFailReason = thr
                 } finally {
                     try {
-                        afterEachMethod?.invokeAspectMethodOnTestInstnace(testInstance)
-                    }catch (thr: Throwable){
-                        if(testFailReason == null){
-                            testFailReason = thr
+                        afterEachMethod?.invokeMethodOnTestInstance(testInstance)
+                    } catch (afterEachThrowable: Throwable) {
+                        if (testFailReason == null) {
+                            testFailReason = afterEachThrowable
                         } else {
-                            log.error(thr, "hide exception")
+                            log.error(afterEachThrowable) { "Method ${testInstance.javaClass.name}.${afterEachMethod?.name} failed" }
                         }
                     }
                 }
 
-                if(testFailReason != null){
+                if (testFailReason != null) {
                     throw testFailReason
                 }
             }
             context.pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
+        }
+    }
+
+    private suspend fun KCallable<*>.invokeMethodOnTestInstance(testInstance: Any) {
+        try {
+            if (isSuspend) callSuspend(testInstance)
+            else call(testInstance)
+        } catch (invocationTargetExc: InvocationTargetException) {
+            throw invocationTargetExc.cause ?: invocationTargetExc
         }
     }
 }

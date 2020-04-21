@@ -224,23 +224,3 @@ class BeforeAndAfterMethodsTest {
     }
 
 }
-
-@TestInstance(PER_CLASS)
-class Foo{
-    @BeforeEach
-    fun beforeAll(){
-//        throw Throwable("ooops")
-    }
-
-    @Test
-    fun test(){
-        println("test")
-        throw Throwable("ooop")
-    }
-
-    @AfterEach
-    fun afterAll(){
-        println("afterAll")
-        throw Throwable("bzzzz")
-    }
-}
