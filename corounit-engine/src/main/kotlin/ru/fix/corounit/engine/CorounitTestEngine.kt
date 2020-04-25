@@ -22,7 +22,6 @@ class CorounitTestEngine : TestEngine {
     override fun getId(): String = "corounit"
 
     override fun discover(request: EngineDiscoveryRequest, uniqueId: UniqueId): TestDescriptor {
-
         val execDesc = CorounitExecutionDescriptor(uniqueId)
 
         val classNameFilter = buildClassNamePredicate(request)
@@ -53,54 +52,54 @@ class CorounitTestEngine : TestEngine {
             classDesc.addChild(CorounitMethodDescriptior(classDesc.uniqueId, method))
         }
 
-        fun addTestClassToDescriptor(execDesc: CorounitExecutionDescriptor, testClass: Class<*>) {
-            val classDesc = CorounitClassDescriptior(execDesc.uniqueId, testClass.kotlin)
-            execDesc.addChild(classDesc)
-            log.trace { "Discover class $testClass" }
-            try {
-
-                for (method in ReflectionSupport.findMethods(
-                        testClass,
-                        { method ->
-                            isMethodASuspendableKotlinTestFunction(method)
-                        },
-                        HierarchyTraversalMode.TOP_DOWN).mapNotNull { it.kotlinFunction }) {
-
-                    classDesc.addChild(
-                            CorounitMethodDescriptior(
-                                    classDesc.uniqueId,
-                                    method)
-                    )
-                }
-            } catch (exc: Exception) {
-                log.error(exc) { "Failed to search for test methods in class $testClass" }
-            }
-        }
-
         request.getSelectorsByType(ClassSelector::class.java).forEach { selector ->
             val selectorClass = selector.getJavaClass()
             if (!classNameFilter.test(selectorClass.name)) {
                 return@forEach
             }
-            addTestClassToDescriptor(execDesc, selectorClass)
+            addTestClassToExecutionDescriptor(execDesc, selectorClass)
         }
 
         request.getSelectorsByType(ClasspathRootSelector::class.java).forEach { selector ->
             ReflectionSupport.findAllClassesInClasspathRoot(selector.classpathRoot, classFilter, classNameFilter)
-                    .forEach { addTestClassToDescriptor(execDesc, it) }
+                    .forEach { addTestClassToExecutionDescriptor(execDesc, it) }
         }
 
         request.getSelectorsByType(ModuleSelector::class.java).forEach { selector ->
             ReflectionSupport.findAllClassesInModule(selector.moduleName, classFilter, classNameFilter)
-                    .forEach { addTestClassToDescriptor(execDesc, it) }
+                    .forEach { addTestClassToExecutionDescriptor(execDesc, it) }
         }
 
         request.getSelectorsByType(PackageSelector::class.java).forEach { selector ->
             ReflectionSupport.findAllClassesInPackage(selector.packageName, classFilter, classNameFilter)
-                    .forEach { addTestClassToDescriptor(execDesc, it) }
+                    .forEach { addTestClassToExecutionDescriptor(execDesc, it) }
         }
 
         return execDesc
+    }
+
+    private fun addTestClassToExecutionDescriptor(execDesc: CorounitExecutionDescriptor, testClass: Class<*>) {
+        val classDesc = CorounitClassDescriptior(execDesc.uniqueId, testClass.kotlin)
+        execDesc.addChild(classDesc)
+        log.trace { "Discover class $testClass" }
+        try {
+
+            for (method in ReflectionSupport.findMethods(
+                    testClass,
+                    { method ->
+                        isMethodASuspendableKotlinTestFunction(method)
+                    },
+                    HierarchyTraversalMode.TOP_DOWN).mapNotNull { it.kotlinFunction }) {
+
+                classDesc.addChild(
+                        CorounitMethodDescriptior(
+                                classDesc.uniqueId,
+                                method)
+                )
+            }
+        } catch (exc: Exception) {
+            log.error(exc) { "Failed to search for test methods in class $testClass" }
+        }
     }
 
     private fun isMethodASuspendableKotlinTestFunction(method: Method): Boolean {
@@ -137,7 +136,9 @@ class CorounitTestEngine : TestEngine {
 
     private fun runBlockingInPool(parallelism: Int, block: suspend CoroutineScope.() -> Unit) {
         val threadCounter = AtomicInteger()
-        val executor = Executors.newFixedThreadPool(parallelism) { Thread(it, "corounit-${threadCounter.getAndIncrement()}") }
+        val executor = Executors.newFixedThreadPool(parallelism) {
+            Thread(it, "corounit-${threadCounter.getAndIncrement()}")
+        }
         try {
             runBlocking(executor.asCoroutineDispatcher() +
                     SupervisorJob() +
@@ -154,7 +155,6 @@ class CorounitTestEngine : TestEngine {
     }
 
     override fun execute(request: ExecutionRequest) {
-
         val config = Configuration(request.configurationParameters)
 
         log.debug { "Corounit uses parallelism level: ${config.parallelism}" }
