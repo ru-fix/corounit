@@ -32,6 +32,7 @@ plugins {
     id(Libs.nexus_publish_plugin) version "0.4.0" apply false
     id(Libs.nexus_staging_plugin) version "0.21.2"
     id("org.asciidoctor.convert") version Vers.asciidoctor
+    jacoco
 }
 
 
@@ -76,6 +77,7 @@ subprojects {
         plugin("java")
         plugin("org.jetbrains.dokka")
         plugin(Libs.nexus_publish_plugin)
+        plugin("jacoco")
     }
 
     repositories {
@@ -85,6 +87,10 @@ subprojects {
         if (!repositoryUrl.isNullOrEmpty()) {
             maven(url = repositoryUrl.toString())
         }
+    }
+
+    jacoco {
+        toolVersion = "0.8.5"
     }
 
     val sourcesJar by tasks.creating(Jar::class) {
@@ -192,14 +198,14 @@ subprojects {
             }
         }
         withType<Test> {
-            useJUnitPlatform(){
+            useJUnitPlatform() {
                 val INCLUDE_TAGS = "includeTags"
                 val EXCLUDE_TAGS = "excludeTags"
 
-                if(project.hasProperty(INCLUDE_TAGS)) {
+                if (project.hasProperty(INCLUDE_TAGS)) {
                     includeTags(project.properties[INCLUDE_TAGS] as String)
                 }
-                if(project.hasProperty(EXCLUDE_TAGS)) {
+                if (project.hasProperty(EXCLUDE_TAGS)) {
                     excludeTags(project.properties[EXCLUDE_TAGS] as String)
                 }
             }
@@ -211,7 +217,15 @@ subprojects {
                 showStandardStreams = true
                 exceptionFormat = TestExceptionFormat.FULL
             }
+
         }
+
+        withType<JacocoReport> {
+            reports {
+                html.isEnabled = true
+            }
+        }
+
     }
 }
 

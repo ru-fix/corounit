@@ -48,11 +48,9 @@ class TestInstanceLifecycleTest {
 
     @Test
     fun `new test instance created for each method invocation by default`() {
-
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<TestClassInstancePerMethodInvocation>()
         TestClassInstancePerMethodInvocation.reset()
 
-        engine.execute(executionRequest)
+        val executionRequest = engine.emulateTestClass<TestClassInstancePerMethodInvocation>()
 
         TestClassInstancePerMethodInvocation.instances.shouldHaveSize(2)
         (TestClassInstancePerMethodInvocation.instances.first !== TestClassInstancePerMethodInvocation.instances.last)
@@ -100,10 +98,9 @@ class TestInstanceLifecycleTest {
 
     @Test
     fun `single instance create for all method invocation if annotation present`() {
-
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<TestClassInstancePerClassInvocationWithAnnotation>()
         TestClassInstancePerClassInvocationWithAnnotation.reset()
-        engine.execute(executionRequest)
+
+        val executionRequest = engine.emulateTestClass<TestClassInstancePerClassInvocationWithAnnotation>()
 
         TestClassInstancePerClassInvocationWithAnnotation.instances.shouldHaveSize(2)
         (TestClassInstancePerClassInvocationWithAnnotation.instances.first ===

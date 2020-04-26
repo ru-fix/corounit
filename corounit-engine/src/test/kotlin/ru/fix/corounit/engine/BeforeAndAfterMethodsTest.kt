@@ -12,7 +12,6 @@ import io.kotlintest.shouldBe
 import mu.KotlinLogging
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.junit.platform.engine.TestDescriptor
 import org.junit.platform.engine.TestExecutionResult
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -42,11 +41,9 @@ class BeforeAndAfterMethodsTest {
 
     @Test
     fun `beforeAll and afterAll invoked in test suite without annotations`() {
-        val executionRequest = engineEmulator.emulateDiscoveryStepForTestClass<MyTestWithoutAnnotations>()
-
         MyTestWithoutAnnotations.reset()
 
-        engineEmulator.execute(executionRequest)
+        val executionRequest = engineEmulator.emulateTestClass<MyTestWithoutAnnotations>()
 
         MyTestWithoutAnnotations.beforeEachState.shouldContainExactly()
         MyTestWithoutAnnotations.beforeAllState.shouldContainExactly(1)
@@ -77,10 +74,9 @@ class BeforeAndAfterMethodsTest {
 
     @Test
     fun `beforeAll and afterAll invoked in test suite with annotations`() {
-        val executionRequest = engineEmulator.emulateDiscoveryStepForTestClass<MyTestWithAnnotations>()
-
         MyTestWithAnnotations.reset()
-        engineEmulator.execute(executionRequest)
+
+        val executionRequest = engineEmulator.emulateTestClass<MyTestWithAnnotations>()
 
         MyTestWithAnnotations.beforeEachState.shouldContainExactly()
         MyTestWithAnnotations.beforeAllState.shouldContainExactly(1)
@@ -114,10 +110,9 @@ class BeforeAndAfterMethodsTest {
 
     @Test
     fun `beforeEach and afterEach invoked in test suite without annotations`() {
-        val executionRequest = engineEmulator.emulateDiscoveryStepForTestClass<BeforeAfterEach>()
-
         BeforeAfterEach.reset()
-        engineEmulator.execute(executionRequest)
+
+        val executionRequest = engineEmulator.emulateTestClass<BeforeAfterEach>()
 
         BeforeAfterEach.beforeAllState.shouldBeEmpty()
         BeforeAfterEach.beforeEachState.shouldHaveSize(2)
@@ -153,10 +148,9 @@ class BeforeAndAfterMethodsTest {
 
     @Test
     fun `beforeEach and afterEach invoked in test suite with annotations`() {
-        val executionRequest = engineEmulator.emulateDiscoveryStepForTestClass<BeforeAfterEachWithAnnotations>()
-
         BeforeAfterEachWithAnnotations.reset()
-        engineEmulator.execute(executionRequest)
+
+        engineEmulator.emulateTestClass<BeforeAfterEachWithAnnotations>()
 
         BeforeAfterEachWithAnnotations.beforeAllState.shouldBeEmpty()
         BeforeAfterEachWithAnnotations.beforeEachState.shouldContain(1)
@@ -197,12 +191,11 @@ class BeforeAndAfterMethodsTest {
 
     @Test
     fun `beforeEach throws Exception should stop test`() {
-         val executionRequest = engineEmulator.emulateDiscoveryStepForTestClass<BeforeEachWithException>()
         BeforeEachWithException.reset()
         BeforeEachWithException.enabledFailing.set(true)
         CorounitConfig.reset()
 
-        engineEmulator.execute(executionRequest)
+        engineEmulator.emulateTestClass<BeforeEachWithException>()
 
         engineEmulator.trapListener.finishedTests.asClue{ finished ->
             val methodInvocation = finished.singleOrNull{ it.first is CorounitMethodDescriptior}

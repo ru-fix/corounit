@@ -27,12 +27,10 @@ class DisabledMethodTest{
 
     @Test
     fun `disabled test does not start`() {
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<TestWithDisabledMethod>()
-
         CorounitConfig.reset()
         TestWithDisabledMethod.reset()
 
-        engine.execute(executionRequest)
+        engine.emulateTestClass<TestWithDisabledMethod>()
 
         TestWithDisabledMethod.methodIdsState.shouldContainExactly(2)
         CorounitConfig.skipMethodsInvocationCount.get().shouldBeGreaterThan(0)

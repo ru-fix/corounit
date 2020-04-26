@@ -60,6 +60,11 @@ class CorounitTestEngine : TestEngine {
             addTestClassToExecutionDescriptor(execDesc, selectorClass)
         }
 
+        request.getSelectorsByType(PackageSelector::class.java).forEach { selector ->
+            ReflectionSupport.findAllClassesInPackage(selector.packageName, classFilter, classNameFilter)
+                    .forEach { addTestClassToExecutionDescriptor(execDesc, it) }
+        }
+
         request.getSelectorsByType(ClasspathRootSelector::class.java).forEach { selector ->
             ReflectionSupport.findAllClassesInClasspathRoot(selector.classpathRoot, classFilter, classNameFilter)
                     .forEach { addTestClassToExecutionDescriptor(execDesc, it) }
@@ -67,11 +72,6 @@ class CorounitTestEngine : TestEngine {
 
         request.getSelectorsByType(ModuleSelector::class.java).forEach { selector ->
             ReflectionSupport.findAllClassesInModule(selector.moduleName, classFilter, classNameFilter)
-                    .forEach { addTestClassToExecutionDescriptor(execDesc, it) }
-        }
-
-        request.getSelectorsByType(PackageSelector::class.java).forEach { selector ->
-            ReflectionSupport.findAllClassesInPackage(selector.packageName, classFilter, classNameFilter)
                     .forEach { addTestClassToExecutionDescriptor(execDesc, it) }
         }
 

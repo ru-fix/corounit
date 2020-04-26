@@ -1,48 +1,79 @@
 package ru.fix.corounit.engine
 
-import io.kotlintest.matchers.collections.shouldBeSingleton
-import io.kotlintest.matchers.types.shouldBeInstanceOf
-import io.kotlintest.shouldBe
+import io.kotlintest.matchers.collections.shouldContainExactly
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import org.junit.jupiter.api.Test
-import org.junit.platform.engine.DiscoveryFilter
-import org.junit.platform.engine.DiscoverySelector
-import org.junit.platform.engine.EngineDiscoveryRequest
-import org.junit.platform.engine.UniqueId
-import org.junit.platform.engine.discovery.PackageSelector
-import ru.fix.corounit.engine.test.discovery.PlainTest
+import org.junit.platform.engine.discovery.ClasspathRootSelector
+import org.junit.platform.engine.discovery.DiscoverySelectors
+import ru.fix.corounit.engine.test.discovery.ComplexDiscoveryPlainTest
+import ru.fix.corounit.engine.test.discovery.ComplexDiscoveryTest
+import ru.fix.corounit.engine.test.discovery.plain.PlainDiscoveryTest
+import kotlin.reflect.jvm.javaMethod
 
 
 class DiscoveryTestClassesTest {
+
+    val engineEmulator = EngineEmulator()
+
     @Test
     fun `discovery test classes among non test and dollar-signled generated classes`() {
-        val engine = CorounitTestEngine()
+        val selector = DiscoverySelectors.selectPackage(ComplexDiscoveryTest::class.java.packageName)
 
-        val discoveryRequest = mockk<EngineDiscoveryRequest>()
+        ComplexDiscoveryTest.reset()
+        ComplexDiscoveryPlainTest.reset()
 
-        val selector = mockk<PackageSelector>()
+        engineEmulator.emulateTestsBySelector(selector)
 
-        val selectorClass = slot<Class<DiscoverySelector>>()
-        every { discoveryRequest.getSelectorsByType<DiscoverySelector>( capture(selectorClass) ) } answers {
-            if(selectorClass.captured ==  PackageSelector::class.java){
-                mutableListOf(selector as DiscoverySelector)
-            } else {
-                emptyList()
-            }
-        }
-        every { discoveryRequest.getFiltersByType<DiscoveryFilter<*>>(any()) } returns emptyList()
+        ComplexDiscoveryTest.methodIdsState.shouldContainExactly(1)
+        ComplexDiscoveryPlainTest.methodIdsState.shouldContainExactly(1)
+    }
 
-        every { selector.packageName } returns "ru.fix.corounit.engine.test"
+    @Test
+    fun `method selector`() {
+        val selector = DiscoverySelectors.selectMethod(
+                PlainDiscoveryTest::class.java,
+                PlainDiscoveryTest::testMethod1.javaMethod)
 
+        PlainDiscoveryTest.reset()
+        engineEmulator.emulateTestsBySelector(selector)
+        PlainDiscoveryTest.methodIdsState.shouldContainExactly(1)
+    }
 
-        val descriptor = engine.discover(discoveryRequest, UniqueId.forEngine("corounit"))
-        descriptor.children.shouldBeSingleton()
-        descriptor.children.single().shouldBeInstanceOf<CorounitClassDescriptior>{
-            it.clazz.qualifiedName.shouldBe(PlainTest::class.qualifiedName)
-            it.methodDescriptors.shouldBeSingleton()
-            it.methodDescriptors.single().method.name.shouldBe(PlainTest::plainTestMethod.name)
-        }
+    @Test
+    fun `class selector`() {
+        val selector = DiscoverySelectors.selectClass(PlainDiscoveryTest::class.java)
+
+        PlainDiscoveryTest.reset()
+        engineEmulator.emulateTestsBySelector(selector)
+        PlainDiscoveryTest.methodIdsState.shouldContainExactly(1)
+    }
+
+    @Test
+    fun `package selector`() {
+        val selector = DiscoverySelectors.selectPackage(PlainDiscoveryTest::class.java.packageName)
+
+        PlainDiscoveryTest.reset()
+        engineEmulator.emulateTestsBySelector(selector)
+        PlainDiscoveryTest.methodIdsState.shouldContainExactly(1)
+    }
+
+    @Test
+    fun `class path selector`() {
+        val selector = mockk<ClasspathRootSelector>()
+        every { selector.classpathRoot } returns PlainDiscoveryTest::class.java.getResource("/").toURI()
+
+        PlainDiscoveryTest.reset()
+        engineEmulator.emulateTestsBySelector(selector)
+        PlainDiscoveryTest.methodIdsState.shouldContainExactly(1)
+    }
+
+    @Test
+    fun `module selector by default returns empty class list`() {
+        val selector = DiscoverySelectors.selectModule("moduleName")
+
+        PlainDiscoveryTest.reset()
+        engineEmulator.emulateTestsBySelector(selector)
+        PlainDiscoveryTest.methodIdsState.shouldContainExactly()
     }
 }

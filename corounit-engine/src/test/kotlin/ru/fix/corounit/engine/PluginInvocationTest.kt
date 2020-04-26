@@ -11,14 +11,13 @@ class PluginInvocationTest {
         }
     }
 
-    private val engine = EngineEmulator()
+    private val engineEmulator = EngineEmulator()
 
     @Test
     fun `plugin object located in same package is invoked`() {
         CorounitConfig.reset()
 
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestClassForPlugin>()
-        engine.execute(executionRequest)
+        engineEmulator.emulateTestClass<MyTestClassForPlugin>()
 
         CorounitConfig.beforeAllTestClassesInvocationCount.get().shouldBeGreaterThan(0)
         CorounitConfig.providerBeforeAllTestClassesInvocationCount.get().shouldBeGreaterThan(0)

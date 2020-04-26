@@ -2,6 +2,7 @@ package ru.fix.corounit.engine.test.discovery
 
 import kotlinx.coroutines.delay
 import org.junit.jupiter.api.Test
+import ru.fix.corounit.engine.TestClassState
 
 /**
  * interface with default methods generate extra class
@@ -28,9 +29,14 @@ import org.junit.jupiter.api.Test
  * ```
  */
 
-class ComplexTest(override val arg: String) : NonTestInterface {
+class ComplexDiscoveryTest : NonTestInterface {
+    companion object: TestClassState()
+
+    override val arg: String = "nice"
+
+    @Test
     suspend fun doOtherWork(){
-        delay(0)
+        testMethodInvoked(1)
     }
 }
 
@@ -42,9 +48,11 @@ interface NonTestInterface{
     }
 }
 
-class PlainTest{
+class ComplexDiscoveryPlainTest{
+    companion object: TestClassState()
+
     @Test
     suspend fun plainTestMethod(){
-        delay(1)
+        testMethodInvoked(1)
     }
 }

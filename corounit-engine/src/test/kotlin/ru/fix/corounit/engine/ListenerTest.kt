@@ -40,11 +40,9 @@ class ListenerTest {
 
     @Test
     fun `success and failed tests reported to junit listener`() {
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestForListener>()
-
         MyTestForListener.shouldFailedTestFail.set(true)
 
-        engine.execute(executionRequest)
+        val executionRequest = engine.emulateTestClass<MyTestForListener>()
 
         engine.trapListener.finishedTests
                 .single {

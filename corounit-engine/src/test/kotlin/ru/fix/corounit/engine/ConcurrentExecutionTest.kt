@@ -54,11 +54,11 @@ class ConcurrentExecutionTest{
 
     @Test
     fun `first test method blocks thread and waits others to complete, whole suite passes without timeout`() {
-        val executionRequest = engine.emulateDiscoveryStepForTestClass<MyTestFirstMethodsWaitsOthers>()
-
         MyTestFirstMethodsWaitsOthers.reset()
         MyTestFirstMethodsWaitsOthers.shouldFirstMethodWaitOthers.set(true)
-        engine.execute(executionRequest)
+
+        engine.emulateTestClass<MyTestFirstMethodsWaitsOthers>()
+
         MyTestFirstMethodsWaitsOthers.shouldFirstMethodWaitOthers.set(false)
 
         MyTestFirstMethodsWaitsOthers.beforeEachState.shouldContainExactly()
