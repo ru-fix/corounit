@@ -4,18 +4,31 @@ Corounit can run thousands test cases concurrently using small amount of threads
 [![Maven Central](https://img.shields.io/maven-central/v/ru.fix/corounit-engine.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22ru.fix%22)
 
 
-* [Standard JUnit Test Engine approach](#standard-junit-test-engine-approach)
-* [Corounit Test Engine suspendable test approach](#corounit-test-engine-suspendable-test-approach)
-* [Corounit plugins](#corounit-plugins)
-* [Test class](#test-class)
-* [JUnit friendship](#junit-friendship)
-* [Allure integration](#allure-integration)
+- [Corounit](#corounit)
+  * [Standard JUnit Test Engine approach](#standard-junit-test-engine-approach)
+  * [Corounit Test Engine suspendable test approach](#corounit-test-engine-suspendable-test-approach)
+  * [Test class instance](#test-class-instance)
+  * [Suspendable and non suspendable test methods](#suspendable-and-non-suspendable-test-methods)
+  * [Test beforeAll and afterAll](#test-beforeall-and-afterall)
+  * [Test beforeEach and afterEach](#test-beforeeach-and-aftereach)
+  * [Corounit plugins and listeners](#corounit-plugins-and-listeners)
+  * [Allure integration](#allure-integration)
+    + [Allure steps](#allure-steps)
+    + [Parameterized tests](#parameterized-tests)
+  * [Corounit Properties](#corounit-properties)
+  * [JUnit friendship](#junit-friendship)
+    + [@Test annotation](#-test-annotation)
+    + [@Tag annotation](#-tag-annotation)
+    + [@TestInstance annotation](#-testinstance-annotation)
+    + [@BeforeAll, @BeforeEach, @AfterEach, @AfterAll annotations](#-beforeall---beforeeach---aftereach---afterall-annotations)
+    + [@ParameterizedTest annotation not supported yet.](#-parameterizedtest-annotation-not-supported-yet)
+  * [Allure reporting](#allure-reporting)
 
 
 ## Standard JUnit Test Engine approach
 Standard JUnit test engine execute test classes and their methods within classical Threads. 
 In order to increase speed of testing phase JUnit engine can be configured to run test clasess in parallel in different threads.
-Or even run each test method of same test class in different threads.
+Or even run each test method of same test class in different threads.  
 See https://junit.org/junit5/docs/snapshot/user-guide/#writing-tests-parallel-execution
 
 Given this configuration JUnit Test Engine will use thread pool of size 4 and run all test classes and test methods in parallel.
@@ -116,6 +129,98 @@ class LongRunningTest {
 }
 ```  
 
+## Test class instance
+
+By default corounit uses new test class instance for each method invocation. 
+As JUnit does. 
+You can override this behaviour via `@TestInstance(PER_CLASS)` annotation. 
+Or use `corounit.testinstance.lifecycle.default=per_class` property.
+
+## Suspendable and non suspendable test methods
+Corounit scan for `suspend` methods annotated with `@Test` annotation.
+If test class has both types of test methods, corounit will launch suspendable ones and default JUnit Test Engine will launch default test methods.
+
+```kotlin
+class TestClass{
+    //runs by JUnit
+    @Test
+    fun `my regular test`(){...}
+
+    //runs by Corounit
+    @Test
+    suspend fun `my suspend test`(){...}   
+}
+```
+
+## Test beforeAll and afterAll
+Corounit follows convention over configuration approach. 
+Methods `beforeAll` and `afterAll` do not need special annotations `@BeforeAll`, `@AfterAll`. 
+They will be invoked before and after all test methods of the test class.
+However annotations `@BeforeAll` and `@AfterAll` works just fine.
+
+```kotlin
+@TestInstance(PER_CLASS)
+class TestClass{
+    suspend fun beforeAll(){...}
+    suspend fun afterAll(){...}
+
+    @Test
+    suspend fun `my suspend test`(){...}   
+}
+```
+You can mark these method by annotations too.
+```kotlin
+@TestInstance(PER_CLASS)
+class TestClass{
+    @BeforeAll
+    suspend fun setUp(){...}
+    @AfterAll
+    suspend fun tearDown(){...}
+
+    @Test
+    suspend fun `my suspend test`(){...}   
+}
+``` 
+
+In case of default `@TestInstance(PER_METHOD)` behaviour, 
+you have to define beforeAll and afterAll methods in companion object.
+```kotlin
+class TestClass{
+    companion object{
+        suspend fun beforeAll(){...}
+        suspend fun afterAll(){...}
+    }
+
+    @Test
+    suspend fun `my suspend test`(){...}   
+}
+``` 
+## Test beforeEach and afterEach
+You can name `beforeEach` and `afterEach`. 
+Then they will be invoked before and after each of test methods.
+Or you can annotate methods with `@BeforeEach` or `@AfterEach` annotation.
+```kotlin
+class TestClass{
+    suspend fun beforeEach(){...}
+    suspend fun afterEach(){...}
+
+    @Test
+    suspend fun `my test`(){...}   
+}
+```
+```kotlin
+class TestClass{
+    @BeforeEach
+    suspend fun createResources(){...}
+    
+    @AfterEach    
+    suspend fun destroyResources(){...}
+
+    @Test
+    suspend fun `my test`(){...}   
+}
+```
+
 ## Corounit plugins and listeners
 Corounit Test Engine provide extension point for test execution lifecycle.  
 This extension point called `CorounitPlugin`.  
@@ -196,81 +301,6 @@ class TestResultLogger: CorounitPlugin{
 }
 ```
 
-## Test class instance
-
-By default corounit uses new test class instance for each method invocation. 
-As JUnit does. 
-You can override this behaviour via `@TestInstance(PER_CLASS)` annotation. 
-Or use `corounit.testinstance.lifecycle.default=per_class` property.
-
-## Test beforeAll and afterAll
-Corounit follows convention over configuration approach. 
-Methods `beforeAll` and `afterAll` do not need special annotations `@BeforeAll`, `@AfterAll`. 
-They will be invoked before and after all test methods of the test class.
-However annotations `@BeforeAll` and `@AfterAll` works just fine.
-
-```kotlin
-@TestInstance(PER_CLASS)
-class TestClass{
-    suspend fun beforeAll(){...}
-    suspend fun afterAll(){...}
-
-    @Test
-    suspend fun `my suspend test`(){...}   
-}
-```
-You can mark these method by annotations too.
-```kotlin
-@TestInstance(PER_CLASS)
-class TestClass{
-    @BeforeAll
-    suspend fun setUp(){...}
-    @AfterAll
-    suspend fun tearDown(){...}
-
-    @Test
-    suspend fun `my suspend test`(){...}   
-}
-``` 
-
-In case of default `@TestInstance(PER_METHOD)` behaviour, 
-you have to define beforeAll and afterAll methods in companion object.
-```kotlin
-class TestClass{
-    companion object{
-        suspend fun beforeAll(){...}
-        suspend fun afterAll(){...}
-    }
-
-    @Test
-    suspend fun `my suspend test`(){...}   
-}
-``` 
-## Test beforeEach and afterEach
-You can name `beforeEach` and `afterEach`. 
-Then they will be invoked before and after each of test methods.
-Or you can annotate methods with `@BeforeEach` or `@AfterEach` annotation.
-```kotlin
-class TestClass{
-    suspend fun beforeEach(){...}
-    suspend fun afterEach(){...}
-
-    @Test
-    suspend fun `my test`(){...}   
-}
-```
-```kotlin
-class TestClass{
-    @BeforeEach
-    suspend fun createResources(){...}
-    
-    @AfterEach    
-    suspend fun destroyResources(){...}
-
-    @Test
-    suspend fun `my test`(){...}   
-}
-```
 ## Allure integration
 `corounit-allure` provides api to enrich test with Allure step description. 
 
