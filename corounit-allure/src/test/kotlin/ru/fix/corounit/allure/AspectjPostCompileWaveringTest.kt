@@ -1,34 +1,31 @@
-package ru.fix.corounit.allure.example
+package ru.fix.corounit.allure
 
 import io.kotlintest.matchers.asClue
 import io.kotlintest.matchers.collections.shouldBeSingleton
 import io.kotlintest.matchers.string.shouldContain
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
-import ru.fix.corounit.allure.AllureStep
-import ru.fix.corounit.allure.Step
 
 
 class MyStep {
     @Step
     suspend fun `my step method`() {
-
     }
 }
 
-class AspectWaveringTest {
+class AspectjPostCompileWaveringTest {
 
     @Test
     fun test() {
-        val step = AllureStep()
-        runBlocking(step) {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
             println("start")
-            val step = MyStep()
-            step.`my step method`()
+            val myStep = MyStep()
+            myStep.`my step method`()
             println("stop")
         }
-        step.children.shouldBeSingleton()
-        step.children.single().step.asClue {
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
             it.name.shouldContain("my step method")
         }
     }

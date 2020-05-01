@@ -2,14 +2,14 @@
 plugins {
     java
     kotlin("jvm")
-    id("io.freefair.aspectj.base") version "5.0.1"
-    id("io.freefair.aspectj.post-compile-weaving") version "5.0.1"
+
+    id("io.freefair.aspectj.base") version Vers.freefair_aspectj
+    id("io.freefair.aspectj.post-compile-weaving") version Vers.freefair_aspectj
 }
 
 aspectj{
     version.set(Vers.aspectj)
 }
-
 
 dependencies {
 
@@ -35,5 +35,6 @@ dependencies {
     testImplementation(Libs.kotlin_test)
     testImplementation(Libs.mockk)
 
+    testAspect(project(Projs.`corounit-allure`.asDependency))
 }
 
