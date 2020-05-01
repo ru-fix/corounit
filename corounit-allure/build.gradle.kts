@@ -25,7 +25,6 @@ dependencies {
     api(Libs.mu_kotlin_logging)
 
     api(Libs.bytebuddy)
-    api(Libs.allure_model)
     api(Libs.allure_java_commons)
 
     implementation(Libs.aspect_rt)
