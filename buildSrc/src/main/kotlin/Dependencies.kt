@@ -14,6 +14,9 @@ object Vers {
     const val allure_plugin = "2.8.1"
     const val allure_cli = "2.13.1"
     const val allure_junit5 = "2.13.1"
+
+    const val aspectj = "1.9.5"
+    const val freefair_aspectj = "5.0.1"
 }
 object Libs {
     //Plugins
@@ -29,6 +32,8 @@ object Libs {
     const val kotlin_reflect = "org.jetbrains.kotlin:kotlin-reflect:${Vers.kotlin}"
     const val kotlinx_coroutines_core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Vers.kotlin_coroutines}"
 
+    const val aspect_rt = "org.aspectj:aspectjrt:${Vers.aspectj}"
+    const val aspect_weaver = "org.aspectj:aspectjweaver:${Vers.aspectj}"
 
     const val mu_kotlin_logging = "io.github.microutils:kotlin-logging:1.7.6"
     const val log4j_core = "org.apache.logging.log4j:log4j-core:${Vers.log4j}"

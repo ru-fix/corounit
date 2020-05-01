@@ -2,11 +2,12 @@
 plugins {
     java
     kotlin("jvm")
-    id("org.jetbrains.kotlin.plugin.allopen") version Vers.kotlin
+    id("io.freefair.aspectj.base") version "5.0.1"
+    id("io.freefair.aspectj.post-compile-weaving") version "5.0.1"
 }
 
-allOpen{
-    annotation("ru.fix.corounit.example.Steps")
+aspectj{
+    version.set(Vers.aspectj)
 }
 
 
@@ -27,10 +28,13 @@ dependencies {
     api(Libs.allure_model)
     api(Libs.allure_java_commons)
 
+    implementation(Libs.aspect_rt)
+
     implementation(Libs.log4j_core)
     implementation(Libs.slf4j_over_log4j)
 
     testImplementation(Libs.kotlin_test)
     testImplementation(Libs.mockk)
+
 }
 

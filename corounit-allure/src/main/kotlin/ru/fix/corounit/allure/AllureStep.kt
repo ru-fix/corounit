@@ -35,6 +35,8 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
 
         fun fromCoroutineContext(coroutineContext: CoroutineContext) = coroutineContext[Key]!!
 
+        fun tryFromCoroutineContext(coroutineContext: CoroutineContext) = coroutineContext[Key]
+
         suspend fun fromCurrentCoroutineContext() = coroutineContext[Key]!!
 
         suspend fun fromCurrentCoroutineContextToToThreadLocal() {
