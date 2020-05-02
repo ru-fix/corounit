@@ -330,6 +330,9 @@ dependencies{
     testAspect("ru.fix:corounit-allure:${Vers.corounit}")
 }
 ``` 
+In IntelliJ IDEA ascpects defined this way could be ingored.   
+In order to launch tests from IDE in gradle project switch executor to gradle:  
+https://www.jetbrains.com/help/idea/work-with-tests-in-gradle.html 
 
 #### Allure step via dynamic subclasses
 `AllureAspect.createStepClassInstance` creates subclass and wrap `open` `suspend` functions into a step.
