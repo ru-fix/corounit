@@ -305,7 +305,29 @@ class TestResultLogger: CorounitPlugin{
 `corounit-allure` provides api to enrich test with Allure step description. 
 
 ### Allure steps
-String steps allow clarify test case and will be present in Allure report.
+There are three options to create Allure steps that will be visible in Allure Report
+ * Annotate `suspend` method with `@Step` annotation.
+ * Create dynamic subclasses via `AllureAspect.newAspectedInstanceViaSubtyping`
+ * Create step via string extension blocks `"step name"{...}`  
+ 
+#### Allure step via annotation 
+ Be aware that it should be `ru.fix.corounit.allure.Step` annotation.
+ ```kotlin
+import ru.fix.corounit.allure.Step
+
+suspend fun `purchase a ticket`(date:  LocalDate){
+    ...
+}
+```
+#### Allure step via dynamic subclasses
+`AllureAspect.createStepClassInstance` creates subclass and wrap `open` `suspend` functions into a step.
+```kotlin
+val airport = createStepClassInstance<AirportSteps>()
+airport.`book flight for person`(person)
+```    
+
+#### Allure step via string extension
+String steps allow clarifying test case and will be present in Allure report.
 ```kotlin
 @Test
 suspend fun `user travel`(){

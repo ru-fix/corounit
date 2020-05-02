@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class MyStep {
     @Step
-    suspend fun `my step method`() {
+    suspend fun `my step method`(number: Int) {
     }
 }
 
@@ -19,14 +19,14 @@ class AspectjPostCompileWaveringTest {
     fun test() {
         val allureStepContextElement = AllureStep()
         runBlocking(allureStepContextElement) {
-            println("start")
             val myStep = MyStep()
-            myStep.`my step method`()
-            println("stop")
+            myStep.`my step method`(42)
         }
         allureStepContextElement.children.shouldBeSingleton()
         allureStepContextElement.children.single().step.asClue {
             it.name.shouldContain("my step method")
+            it.name.shouldContain("number")
+            it.name.shouldContain("42")
         }
     }
 }

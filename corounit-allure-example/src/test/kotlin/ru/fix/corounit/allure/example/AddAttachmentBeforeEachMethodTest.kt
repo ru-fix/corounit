@@ -9,7 +9,7 @@ import ru.fix.corounit.allure.invoke
 private val log = KotlinLogging.logger { }
 
 
-class AttachmentInEachMethodTest {
+class AddAttachmentBeforeEachMethodTest {
 
     suspend fun beforeEach() {
         AllureStep.attachment("attach", "content")
@@ -28,6 +28,4 @@ class AttachmentInEachMethodTest {
             true.shouldBeTrue()
         }
     }
-
-
 }
