@@ -315,10 +315,22 @@ There are three options to create Allure steps that will be visible in Allure Re
  ```kotlin
 import ru.fix.corounit.allure.Step
 
+@Step
 suspend fun `purchase a ticket`(date:  LocalDate){
     ...
 }
 ```
+Be aware that `StepAnnotationAspect` from `corounit-allure` should be activated during your build.
+```kotlin
+plugins{
+    id("io.freefair.aspectj.base") version Vers.freefair_aspectj
+    id("io.freefair.aspectj.post-compile-weaving") version Vers.freefair_aspectj
+}
+dependencies{
+    testAspect("ru.fix:corounit-allure:${Vers.corounit}")
+}
+``` 
+
 #### Allure step via dynamic subclasses
 `AllureAspect.createStepClassInstance` creates subclass and wrap `open` `suspend` functions into a step.
 ```kotlin
