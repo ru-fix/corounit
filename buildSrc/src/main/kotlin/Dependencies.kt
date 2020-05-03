@@ -5,8 +5,8 @@ object Vers {
     const val asciidoctor = "1.5.9.2"
 
     //Dependencies
-    const val kotlin = "1.3.61"
-    const val kotlin_coroutines = "1.3.3"
+    const val kotlin = "1.3.70"
+    const val kotlin_coroutines = "1.3.5"
     const val junit = "5.6.0"
 
     const val log4j =  "2.12.0"

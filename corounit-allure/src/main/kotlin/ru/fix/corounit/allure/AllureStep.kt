@@ -87,10 +87,10 @@ class AllureStep : AbstractCoroutineContextElement(Key) {
     fun startChildStepWithCoroutineContext(name: String, parentCoroutineContext: CoroutineContext): CoroutineContext {
         val parentStep = parentCoroutineContext[Key]!!
 
-        val childStepContext = createStep(name)
-        parentStep.children.add(childStepContext)
+        val childStepContextElement = this.createStep(name)
+        parentStep.children.add(childStepContextElement)
 
-        return parentStep + childStepContext
+        return parentCoroutineContext + childStepContextElement
     }
 
     private fun createStep(name: String) =
