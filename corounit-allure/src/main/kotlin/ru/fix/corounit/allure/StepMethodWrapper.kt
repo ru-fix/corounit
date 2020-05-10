@@ -13,14 +13,15 @@ class IllegalMethodAspected(method: Method, message: String) :
         Exception("$message Corounit Allure aspected method should be suspendable: $method")
 
 class StepMethodWrapper(
-        originMethod: Method,
-        originArgs: Array<Any?>) {
+        private val originMethod: Method,
+        private val originArgs: Array<Any?>) {
 
     private val newArgs: Array<Any?>
     private val methodAllureStep: AllureStep?
+    private val originContinuation: Continuation<Any?>
 
     init {
-        val originContinuation = originArgs.findLast { it is Continuation<*> } as? Continuation<Any?>
+        originContinuation = originArgs.findLast { it is Continuation<*> } as? Continuation<Any?>
                 ?: throw IllegalMethodAspected(originMethod, "Continuation argument not found.")
 
         val parentStep = AllureStep.tryFromCoroutineContext(originContinuation.context)
@@ -41,22 +42,33 @@ class StepMethodWrapper(
 
         val childCoroutineContext = parentStep.startChildStepWithCoroutineContext(title, originContinuation.context)
         methodAllureStep = AllureStep.fromCoroutineContext(childCoroutineContext)
-
         newArgs = originArgs.copyOf()
-        newArgs[newArgs.lastIndex] = object : Continuation<Any?> {
-            override val context: CoroutineContext
-                get() = childCoroutineContext
 
-            override fun resumeWith(result: Result<Any?>) {
-                originContinuation.resumeWith(result)
+        if (!isMethodInvokedRecursivelyWithItsInnerContinuation()) {
+            newArgs[newArgs.lastIndex] = object : Continuation<Any?> {
+                override val context: CoroutineContext
+                    get() = childCoroutineContext
+
+                override fun resumeWith(result: Result<Any?>) {
+                    methodAllureStep.stop()
+                    originContinuation.resumeWith(result)
+                }
             }
         }
+
+
     }
+
+    private fun isMethodInvokedRecursivelyWithItsInnerContinuation() =
+            originContinuation.javaClass.enclosingClass?.name ==
+            originMethod.declaringClass.name
 
     fun wrappedInvoke(originalMethodInvocation: (newArgs: Array<Any?>) -> Any?): Any? {
         try {
             val result = originalMethodInvocation(newArgs)
-            methodAllureStep?.stop()
+            if (result != kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED) {
+                methodAllureStep?.stop()
+            }
             return result
         } catch (thr: Throwable) {
             methodAllureStep?.stop(thr)

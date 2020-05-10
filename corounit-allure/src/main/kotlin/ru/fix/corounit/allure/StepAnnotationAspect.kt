@@ -23,9 +23,10 @@ class StepAnnotationAspect {
         val originMethod = (joinPoint.signature as MethodSignature).method
         val originArgs = joinPoint.args
 
+
         val methodWrapper = StepMethodWrapper(originMethod, originArgs)
 
-        return methodWrapper.wrappedInvoke {newArgs ->
+        return methodWrapper.wrappedInvoke { newArgs ->
             joinPoint.proceed(newArgs)
         }
     }

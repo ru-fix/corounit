@@ -3,25 +3,29 @@ package ru.fix.corounit.allure
 import io.kotlintest.matchers.asClue
 import io.kotlintest.matchers.collections.shouldBeSingleton
 import io.kotlintest.matchers.string.shouldContain
-import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
-import java.util.concurrent.Executors
 
 
 class MyStep {
+    suspend fun makeRequest(): String {
+        return makeSubRequest()
+    }
 
-    val pool = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
-
-    suspend fun makeRequest(){
-        withContext(pool){
-            Thread.sleep(100)
-        }
+    suspend fun makeSubRequest(): String {
+        delay(1)
+        return "sub-request"
     }
 
     @Step
-    suspend fun `my step method`(number: Int) {
+    suspend fun aspectedMethodWithReturnValue(number: Int): Boolean {
+        makeRequest()
+        return true
+    }
+
+    @Step
+    suspend fun aspectedMethodWithoutReturnValue(number: Int) {
         makeRequest()
     }
 }
@@ -29,15 +33,30 @@ class MyStep {
 class AspectjPostCompileWaveringTest {
 
     @Test
-    fun test() {
+    fun `aspected method with return value`() {
         val allureStepContextElement = AllureStep()
         runBlocking(allureStepContextElement) {
             val myStep = MyStep()
-            myStep.`my step method`(42)
+            myStep.aspectedMethodWithReturnValue(42)
         }
         allureStepContextElement.children.shouldBeSingleton()
         allureStepContextElement.children.single().step.asClue {
-            it.name.shouldContain("my step method")
+            it.name.shouldContain("aspectedMethodWithReturnValue")
+            it.name.shouldContain("number")
+            it.name.shouldContain("42")
+        }
+    }
+
+    @Test
+    fun `aspected method without return value`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = MyStep()
+            myStep.aspectedMethodWithoutReturnValue(42)
+        }
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
+            it.name.shouldContain("aspectedMethodWithoutReturnValue")
             it.name.shouldContain("number")
             it.name.shouldContain("42")
         }
