@@ -1,6 +1,7 @@
 package ru.fix.corounit.allure
 
 import io.kotlintest.matchers.asClue
+import io.kotlintest.matchers.collections.shouldBeEmpty
 import io.kotlintest.matchers.collections.shouldBeSingleton
 import io.kotlintest.matchers.string.shouldContain
 import kotlinx.coroutines.delay
@@ -30,6 +31,19 @@ class MyStep {
     }
 }
 
+@Step
+class StepClassWithAnnotation{
+    suspend fun stepMethodWithoutAnnotation(number: Int): Boolean {
+        return true
+    }
+}
+
+class StepClassWithoutAnnotation{
+    suspend fun stepMethodWithoutAnnotation(number: Int): Boolean {
+        return true
+    }
+}
+
 class AspectjPostCompileWaveringTest {
 
     @Test
@@ -41,7 +55,7 @@ class AspectjPostCompileWaveringTest {
         }
         allureStepContextElement.children.shouldBeSingleton()
         allureStepContextElement.children.single().step.asClue {
-            it.name.shouldContain("aspectedMethodWithReturnValue")
+            it.name.shouldContain(MyStep::aspectedMethodWithReturnValue.name)
             it.name.shouldContain("number")
             it.name.shouldContain("42")
         }
@@ -56,9 +70,32 @@ class AspectjPostCompileWaveringTest {
         }
         allureStepContextElement.children.shouldBeSingleton()
         allureStepContextElement.children.single().step.asClue {
-            it.name.shouldContain("aspectedMethodWithoutReturnValue")
+            it.name.shouldContain(MyStep::aspectedMethodWithoutReturnValue.name)
             it.name.shouldContain("number")
             it.name.shouldContain("42")
         }
+    }
+
+    @Test
+    fun `step class with annotation does not require annotation on each method`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = StepClassWithAnnotation()
+            myStep.stepMethodWithoutAnnotation(42)
+        }
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
+            it.name.shouldContain(StepClassWithAnnotation::stepMethodWithoutAnnotation.name)
+        }
+    }
+
+    @Test
+    fun `step class without annotations does nothing`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = StepClassWithoutAnnotation()
+            myStep.stepMethodWithoutAnnotation(42)
+        }
+        allureStepContextElement.children.shouldBeEmpty()
     }
 }

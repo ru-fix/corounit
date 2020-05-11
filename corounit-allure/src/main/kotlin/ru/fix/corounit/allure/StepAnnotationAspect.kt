@@ -13,12 +13,17 @@ class StepAnnotationAspect {
         //pointcut body, should be empty
     }
 
+    @Pointcut("@within(ru.fix.corounit.allure.Step)")
+    fun withinStepAnnotation() {
+        //pointcut body, should be empty
+    }
+
     @Pointcut("execution(* *(..))")
     fun anyMethod() {
         //pointcut body, should be empty
     }
 
-    @Around("anyMethod() && withStepAnnotation()")
+    @Around("anyMethod() && (withStepAnnotation() || withinStepAnnotation())")
     fun aroundStepMethod(joinPoint: ProceedingJoinPoint): Any? {
         val originMethod = (joinPoint.signature as MethodSignature).method
         val originArgs = joinPoint.args
