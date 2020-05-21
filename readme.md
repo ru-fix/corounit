@@ -307,6 +307,7 @@ class TestResultLogger: CorounitPlugin{
 ### Allure steps
 There are three options to create Allure steps that will be visible in Allure Report
  * Annotate `suspend` method with `@Step` annotation.
+ * Annotate class with `@Step` annotation.
  * Create dynamic subclasses via `AllureAspect.newAspectedInstanceViaSubtyping`
  * Create step via string extension blocks `"step name"{...}`  
  
@@ -328,8 +329,11 @@ plugins{
 }
 dependencies{
     testAspect("ru.fix:corounit-allure:${Vers.corounit}")
+    testImplementation(Libs.aspect_weaver)
 }
 ``` 
+`@Step` annotated aproach currently does not works for methods with recursion.
+
 In IntelliJ IDEA ascpects defined this way could be ingored.   
 In order to launch tests from IDE in gradle project switch executor to gradle:  
 https://www.jetbrains.com/help/idea/work-with-tests-in-gradle.html 
