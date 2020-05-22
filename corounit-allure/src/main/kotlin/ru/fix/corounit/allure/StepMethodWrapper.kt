@@ -18,49 +18,54 @@ class StepMethodWrapper(
 
     private val newArgs: Array<Any?>
     private val methodAllureStep: AllureStep?
-    private val originContinuation: Continuation<Any?>
+    private val originContinuation: Continuation<Any?>?
 
     init {
         originContinuation = originArgs.findLast { it is Continuation<*> } as? Continuation<Any?>
-                ?: throw IllegalMethodAspected(originMethod, "Continuation argument not found.")
+        if (originContinuation == null){
+            newArgs = originArgs
+            methodAllureStep = null
 
-        val parentStep = AllureStep.tryFromCoroutineContext(originContinuation.context)
-                ?: throw IllegalMethodAspected(originMethod,
-                        "Parent AllureStep not found in coroutine context")
+        } else {
+            val parentStep = AllureStep.tryFromCoroutineContext(originContinuation.context)
+            if(parentStep == null){
+                newArgs = originArgs
+                methodAllureStep = null
 
-        val parameterNames = originMethod.kotlinFunction?.parameters
-                ?.filter { it.kind == KParameter.Kind.VALUE }
-                ?.map { it.name }
-                ?: originMethod.parameters.map { it.name }
+            } else {
+                val parameterNames = originMethod.kotlinFunction?.parameters
+                        ?.filter { it.kind == KParameter.Kind.VALUE }
+                        ?.map { it.name }
+                        ?: originMethod.parameters.map { it.name }
 
-        val title = "" +
-                originMethod.name + " " +
-                parameterNames
-                        .zip(originArgs)
-                        .map { (name, arg) -> "$name: $arg" }
-                        .joinToString(prefix = "(", separator = ", ", postfix = ")")
+                val title = "" +
+                        originMethod.name + " " +
+                        parameterNames
+                                .zip(originArgs)
+                                .map { (name, arg) -> "$name: $arg" }
+                                .joinToString(prefix = "(", separator = ", ", postfix = ")")
 
-        val childCoroutineContext = parentStep.startChildStepWithCoroutineContext(title, originContinuation.context)
-        methodAllureStep = AllureStep.fromCoroutineContext(childCoroutineContext)
-        newArgs = originArgs.copyOf()
+                val childCoroutineContext = parentStep.startChildStepWithCoroutineContext(title, originContinuation.context)
+                methodAllureStep = AllureStep.fromCoroutineContext(childCoroutineContext)
+                newArgs = originArgs.copyOf()
 
-        if (!isMethodInvokedRecursivelyWithItsInnerContinuation()) {
-            newArgs[newArgs.lastIndex] = object : Continuation<Any?> {
-                override val context: CoroutineContext
-                    get() = childCoroutineContext
+                if (!isMethodInvokedRecursivelyWithItsInnerContinuation()) {
+                    newArgs[newArgs.lastIndex] = object : Continuation<Any?> {
+                        override val context: CoroutineContext
+                            get() = childCoroutineContext
 
-                override fun resumeWith(result: Result<Any?>) {
-                    methodAllureStep.stop()
-                    originContinuation.resumeWith(result)
+                        override fun resumeWith(result: Result<Any?>) {
+                            methodAllureStep.stop()
+                            originContinuation.resumeWith(result)
+                        }
+                    }
                 }
             }
         }
-
-
     }
 
     private fun isMethodInvokedRecursivelyWithItsInnerContinuation() =
-            originContinuation.javaClass.enclosingClass?.name ==
+            originContinuation?.javaClass?.enclosingClass?.name ==
             originMethod.declaringClass.name
 
     fun wrappedInvoke(originalMethodInvocation: (newArgs: Array<Any?>) -> Any?): Any? {
