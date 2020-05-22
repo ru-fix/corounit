@@ -36,6 +36,14 @@ class StepClassWithAnnotation{
     suspend fun stepMethodWithoutAnnotation(number: Int): Boolean {
         return true
     }
+
+    suspend fun stepWithDefaultValues(number: Int = 42, answer: Boolean = true): Boolean{
+        return answer
+    }
+
+    suspend fun stepWithDefaultValuesAndNoReturn(number: Int = 42, answer: Boolean = true){
+        delay(0)
+    }
 }
 
 class StepClassWithoutAnnotation{
@@ -43,6 +51,23 @@ class StepClassWithoutAnnotation{
         return true
     }
 }
+
+@Step
+class IntToJointPointCast{
+
+    suspend fun stepWithDefaultValues(number: Int = 42, answer: Boolean = true): Boolean{
+        return answer
+    }
+}
+
+@Step
+open class OpenClassWithAnnotation{
+
+    suspend fun stepWithDefaultValues(number: Int = 42, answer: Boolean = true): Boolean{
+        return answer
+    }
+}
+
 
 class AspectjPostCompileWaveringTest {
 
@@ -97,5 +122,71 @@ class AspectjPostCompileWaveringTest {
             myStep.stepMethodWithoutAnnotation(42)
         }
         allureStepContextElement.children.shouldBeEmpty()
+    }
+
+    @Test
+    fun `aspected method with default args and return value`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = StepClassWithAnnotation()
+            myStep.stepWithDefaultValues()
+        }
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
+            it.name.shouldContain(StepClassWithAnnotation::stepWithDefaultValues.name)
+        }
+    }
+
+
+    @Test
+    fun `aspected method with default args and without return value`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = StepClassWithAnnotation()
+            myStep.stepWithDefaultValuesAndNoReturn()
+        }
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
+            it.name.shouldContain(StepClassWithAnnotation::stepWithDefaultValues.name)
+        }
+    }
+
+    @Test
+    fun `aspected method with default args and without return value with partially provided args`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = StepClassWithAnnotation()
+            myStep.stepWithDefaultValuesAndNoReturn(55)
+        }
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
+            it.name.shouldContain(StepClassWithAnnotation::stepWithDefaultValues.name)
+        }
+    }
+
+    @Test
+    fun `int to jpinPoint cast`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = IntToJointPointCast()
+            myStep.stepWithDefaultValues(55)
+        }
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
+            it.name.shouldContain(StepClassWithAnnotation::stepWithDefaultValues.name)
+        }
+    }
+
+    @Test
+    fun `open class with annotation`() {
+        val allureStepContextElement = AllureStep()
+        runBlocking(allureStepContextElement) {
+            val myStep = OpenClassWithAnnotation()
+            myStep.stepWithDefaultValues(55)
+        }
+        allureStepContextElement.children.shouldBeSingleton()
+        allureStepContextElement.children.single().step.asClue {
+            it.name.shouldContain(StepClassWithAnnotation::stepWithDefaultValues.name)
+        }
     }
 }
