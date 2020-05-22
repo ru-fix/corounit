@@ -1,16 +1,10 @@
 package ru.fix.corounit.allure
 
-import mu.KotlinLogging
 import java.lang.reflect.Method
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.kotlinFunction
-
-private val log = KotlinLogging.logger { }
-
-class IllegalMethodAspected(method: Method, message: String) :
-        Exception("$message Corounit Allure aspected method should be suspendable: $method")
 
 class StepMethodWrapper(
         private val originMethod: Method,
