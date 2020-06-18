@@ -8,7 +8,6 @@ import io.qameta.allure.model.StatusDetails
 import io.qameta.allure.model.TestResult
 import io.qameta.allure.util.AnnotationUtils
 import io.qameta.allure.util.ResultsUtils
-import kotlinx.coroutines.CoroutineName
 import ru.fix.corounit.engine.CorounitPlugin
 import ru.fix.corounit.engine.TestClassContextElement
 import ru.fix.corounit.engine.TestMethodContextElement
@@ -111,7 +110,7 @@ class AllureCorounitPlugin(
 
             labels.addAll(listOf(
                     Label().setName(ResultsUtils.THREAD_LABEL_NAME)
-                            .setValue(testMethodContext.get(CoroutineName)?.name ?: uuid)
+                            .setValue("$name : $uuid")
             ))
         }
     }
