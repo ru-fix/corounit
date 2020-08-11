@@ -14,9 +14,7 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath(Libs.kotlin_stdlib)
-        classpath(Libs.kotlin_jdk8)
-        classpath(Libs.kotlin_reflect)
+        classpath(kotlin("gradle-plugin", version = Vers.kotlin))
 
         classpath(Libs.gradle_release_plugin)
         classpath(Libs.dokka_gradle_plugin)
@@ -192,9 +190,13 @@ subprojects {
     }
 
     tasks {
+        withType<JavaCompile> {
+            sourceCompatibility = JavaVersion.VERSION_1_8.toString()
+            targetCompatibility = JavaVersion.VERSION_1_8.toString()
+        }
         withType<KotlinCompile> {
             kotlinOptions {
-                jvmTarget = "1.8"
+                jvmTarget = JavaVersion.VERSION_1_8.toString()
             }
         }
         withType<Test> {
