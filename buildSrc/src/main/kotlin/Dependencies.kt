@@ -5,8 +5,9 @@ object Vers {
     const val asciidoctor = "1.5.9.2"
 
     //Dependencies
-    const val kotlin = "1.3.70"
-    const val kotlin_coroutines = "1.3.5"
+    const val kotlin = "1.4.10"
+    const val kotlin_gralde = "1.3.72"
+    const val kotlin_coroutines = "1.3.9"
     const val junit = "5.6.0"
 
     const val log4j =  "2.12.0"
@@ -28,9 +29,15 @@ object Libs {
 
     //Dependencies
     const val kotlin_stdlib = "org.jetbrains.kotlin:kotlin-stdlib:${Vers.kotlin}"
+    const val kotlin_gradle_stdlib = "org.jetbrains.kotlin:kotlin-stdlib:${Vers.kotlin_gralde}"
     const val kotlin_jdk8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Vers.kotlin}"
+    const val kotlin_gradle_jdk8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Vers.kotlin_gralde}"
     const val kotlin_reflect = "org.jetbrains.kotlin:kotlin-reflect:${Vers.kotlin}"
     const val kotlinx_coroutines_core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Vers.kotlin_coroutines}"
+    const val kotlin_compiler_embeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:${Vers.kotlin}"
+
+//    const val arrow_meta = "io.arrow-kt:arrow-meta:0.10.5"
+    const val arrow_meta = "io.arrow-kt:compiler-plugin:1.3.61-SNAPSHOT"
 
     const val aspect_rt = "org.aspectj:aspectjrt:${Vers.aspectj}"
     const val aspect_weaver = "org.aspectj:aspectjweaver:${Vers.aspectj}"
