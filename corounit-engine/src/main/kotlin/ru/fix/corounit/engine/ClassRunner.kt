@@ -185,6 +185,10 @@ class ClassRunner(
                     thr
                 }
                 afterPluginCall(pluginContext, throwable)
+
+                if (null != throwable) {
+                    throw throwable
+                }
             }
         }
     }
