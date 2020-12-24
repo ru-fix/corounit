@@ -6,6 +6,7 @@ import kotlinx.coroutines.supervisorScope
 import mu.KotlinLogging
 import org.junit.jupiter.api.*
 import java.lang.reflect.InvocationTargetException
+import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KCallable
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.*
@@ -144,32 +145,46 @@ class ClassRunner(
             classContext: TestClassContextElement,
             testInstance: Any
     ) {
-        beforeAllMethod?.let {
-            val methodContext = classContext + TestMethodContextElement(it)
-            val pluginContext = context.pluginDispatcher.beforeBeforeAllMethod(methodContext)
-            launch(pluginContext) {
-                try {
-                    it.invokeMethodOnTestInstance(testInstance)
-                } finally {
-                    context.pluginDispatcher.afterBeforeAllMethod(pluginContext, null)
-                }
-            }
-        }
+        executeBeforeOrAfterAllMethodIfPresent(
+                classContext,
+                testInstance,
+                beforeAllMethod,
+                { methodContext -> context.pluginDispatcher.beforeBeforeAllMethod(methodContext) },
+                { pluginContext, thr -> context.pluginDispatcher.afterBeforeAllMethod(pluginContext, thr) }
+        )
     }
 
     private suspend fun CoroutineScope.executeAfterAllMethodIfPresent(
             classContext: TestClassContextElement,
             testInstance: Any
     ) {
-        afterAllMethod?.let {
+        executeBeforeOrAfterAllMethodIfPresent(
+                classContext,
+                testInstance,
+                afterAllMethod,
+                { methodContext -> context.pluginDispatcher.beforeAfterAllMethod(methodContext) },
+                { pluginContext, thr -> context.pluginDispatcher.afterAfterAllMethod(pluginContext, thr) }
+        )
+    }
+
+    private suspend fun CoroutineScope.executeBeforeOrAfterAllMethodIfPresent(
+            classContext: TestClassContextElement,
+            testInstance: Any,
+            method: KFunction<*>?,
+            beforePluginCall: suspend (methodContext: CoroutineContext) -> CoroutineContext,
+            afterPluginCall: suspend (pluginContext: CoroutineContext, thr: Throwable?) -> Unit
+    ) {
+        method?.let {
             val methodContext = classContext + TestMethodContextElement(it)
-            val pluginContext = context.pluginDispatcher.beforeAfterAllMethod(methodContext)
+            val pluginContext = beforePluginCall(methodContext)
             launch(pluginContext) {
-                try {
+                val throwable = try {
                     it.invokeMethodOnTestInstance(testInstance)
-                } finally {
-                    context.pluginDispatcher.afterAfterAllMethod(pluginContext, null)
+                    null
+                } catch (thr: Throwable) {
+                    thr
                 }
+                afterPluginCall(pluginContext, throwable)
             }
         }
     }

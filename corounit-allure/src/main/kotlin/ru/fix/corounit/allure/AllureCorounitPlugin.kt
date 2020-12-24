@@ -33,6 +33,15 @@ class AllureCorounitPlugin(
         writeTestResultInAllure(testMethodContext, thr)
     }
 
+    override suspend fun beforeAfterAllMethod(testMethodContext: CoroutineContext): CoroutineContext {
+        val methodResult = createAllureTestResult(testMethodContext)
+        return testMethodContext + AllureStep() + TestResultContextElement(methodResult)
+    }
+
+    override suspend fun afterAfterAllMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+        writeTestResultInAllure(testMethodContext, thr)
+    }
+
     override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
         val testResult = createAllureTestResult(testMethodContext)
         return testMethodContext + AllureStep() + TestResultContextElement(testResult)
