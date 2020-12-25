@@ -24,11 +24,37 @@ class AllureCorounitPlugin(
         private val writer: AllureResultsWriter = AllureWriter
 ) : CorounitPlugin {
 
+    override suspend fun beforeBeforeAllMethod(testMethodContext: CoroutineContext): CoroutineContext {
+        val methodResult = createAllureTestResult(testMethodContext)
+        return testMethodContext + AllureStep() + TestResultContextElement(methodResult)
+    }
+
+    override suspend fun afterBeforeAllMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+        writeTestResultInAllure(testMethodContext, thr)
+    }
+
+    override suspend fun beforeAfterAllMethod(testMethodContext: CoroutineContext): CoroutineContext {
+        val methodResult = createAllureTestResult(testMethodContext)
+        return testMethodContext + AllureStep() + TestResultContextElement(methodResult)
+    }
+
+    override suspend fun afterAfterAllMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+        writeTestResultInAllure(testMethodContext, thr)
+    }
+
     override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
         val testResult = createAllureTestResult(testMethodContext)
-        return testMethodContext +
-                AllureStep() +
-                TestResultContextElement(testResult)
+        return testMethodContext + AllureStep() + TestResultContextElement(testResult)
+    }
+
+    override suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+        writeTestResultInAllure(testMethodContext, thr)
+    }
+
+    override suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String) {
+        val testResult = createAllureTestResult(testMethodContext)
+        finalizeAllureTestResult(testResult, Status.SKIPPED, StatusDetails().setMessage(reason))
+        writer.write(testResult)
     }
 
     private fun createAllureTestResult(testMethodContext: CoroutineContext): TestResult {
@@ -65,7 +91,7 @@ class AllureCorounitPlugin(
         }
     }
 
-    override suspend fun afterTestMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+    private fun writeTestResultInAllure(testMethodContext: CoroutineContext, thr: Throwable?) {
         val testResult = testMethodContext[TestResultContextElement]!!.allureResult
         val methodInvocationStep = AllureStep.fromCoroutineContext(testMethodContext)
 
@@ -78,12 +104,10 @@ class AllureCorounitPlugin(
         if (thr == null) {
             finalizeAllureTestResult(
                     testResult = testResult,
-                    testMethodContext = testMethodContext,
                     status = Status.PASSED)
         } else {
             finalizeAllureTestResult(
                     testResult =  testResult,
-                    testMethodContext = testMethodContext,
                     status = ResultsUtils.getStatus(thr).get(),
                     statusDetails = ResultsUtils.getStatusDetails(thr).get())
         }
@@ -91,15 +115,8 @@ class AllureCorounitPlugin(
         writer.write(testResult)
     }
 
-    override suspend fun skipTestMethod(testMethodContext: CoroutineContext, reason: String) {
-        val testResult = createAllureTestResult(testMethodContext)
-        finalizeAllureTestResult(testResult, testMethodContext, Status.SKIPPED, StatusDetails().setMessage(reason))
-        writer.write(testResult)
-    }
-
     private fun finalizeAllureTestResult(
             testResult: TestResult,
-            testMethodContext: CoroutineContext,
             status: Status,
             statusDetails: StatusDetails? = null){
 

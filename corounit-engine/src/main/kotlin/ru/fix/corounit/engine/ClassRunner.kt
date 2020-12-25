@@ -6,12 +6,10 @@ import kotlinx.coroutines.supervisorScope
 import mu.KotlinLogging
 import org.junit.jupiter.api.*
 import java.lang.reflect.InvocationTargetException
+import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KCallable
-import kotlin.reflect.KClass
-import kotlin.reflect.full.callSuspend
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.KFunction
+import kotlin.reflect.full.*
 
 private val log = KotlinLogging.logger { }
 
@@ -22,31 +20,30 @@ class ClassRunner(
 
     private val testInstanceLifecycle = resolveTestInstanceLifecycle(classDesc)
 
-    private val classWithBeforeAllAndAfterAllMethods: KClass<*>?
-    private val beforeAllMethod: KCallable<*>?
-    private val afterAllMethod: KCallable<*>?
-    private val beforeEachMethod: KCallable<*>?
-    private val afterEachMethod: KCallable<*>?
+    private val beforeAllMethod: KFunction<*>?
+    private val afterAllMethod: KFunction<*>?
+    private val beforeEachMethod: KFunction<*>?
+    private val afterEachMethod: KFunction<*>?
 
     init {
-        classWithBeforeAllAndAfterAllMethods = when (testInstanceLifecycle) {
+        val classWithBeforeAllAndAfterAllMethods = when (testInstanceLifecycle) {
             TestInstance.Lifecycle.PER_CLASS -> classDesc.clazz
             TestInstance.Lifecycle.PER_METHOD -> classDesc.clazz.companionObject
         }
 
-        beforeAllMethod = classWithBeforeAllAndAfterAllMethods?.members
+        beforeAllMethod = classWithBeforeAllAndAfterAllMethods?.functions
                 ?.filter { it.name == "beforeAll" || it.findAnnotation<BeforeAll>() != null }
                 ?.firstOrNull { it.parameters.size == 1 }
 
-        afterAllMethod = classWithBeforeAllAndAfterAllMethods?.members
+        afterAllMethod = classWithBeforeAllAndAfterAllMethods?.functions
                 ?.filter { it.name == "afterAll" || it.findAnnotation<AfterAll>() != null }
                 ?.firstOrNull { it.parameters.size == 1 }
 
-        beforeEachMethod = classDesc.clazz.members
+        beforeEachMethod = classDesc.clazz.functions
                 .filter { it.name == "beforeEach" || it.findAnnotation<BeforeEach>() != null }
                 .firstOrNull { it.parameters.size == 1 }
 
-        afterEachMethod = classDesc.clazz.members
+        afterEachMethod = classDesc.clazz.functions
                 .filter { it.name == "afterEach" || it.findAnnotation<AfterEach>() != null }
                 .firstOrNull { it.parameters.size == 1 }
     }
@@ -59,7 +56,8 @@ class ClassRunner(
             when (testInstanceLifecycle) {
                 TestInstance.Lifecycle.PER_CLASS -> {
                     val testInstance = context.pluginDispatcher.createTestClassInstance(classDesc.clazz)
-                    beforeAllMethod?.invokeMethodOnTestInstance(testInstance)
+
+                    executeBeforeAllMethodIfPresent(classContext, testInstance)
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
@@ -67,12 +65,11 @@ class ClassRunner(
                         }
                     }
 
-                    afterAllMethod?.invokeMethodOnTestInstance(testInstance)
-
+                    executeAfterAllMethodIfPresent(classContext, testInstance)
                 }
                 TestInstance.Lifecycle.PER_METHOD -> {
-                    classDesc.clazz.companionObjectInstance?.let {
-                        beforeAllMethod?.invokeMethodOnTestInstance(it)
+                    classDesc.clazz.companionObjectInstance?.let { testInstance ->
+                        executeBeforeAllMethodIfPresent(classContext, testInstance)
                     }
 
                     supervisorScope {
@@ -82,14 +79,15 @@ class ClassRunner(
                         }
                     }
 
-                    classDesc.clazz.companionObjectInstance?.let {
-                        afterAllMethod?.invokeMethodOnTestInstance(it)
+                    classDesc.clazz.companionObjectInstance?.let { testInstance ->
+                        executeAfterAllMethodIfPresent(classContext, testInstance)
                     }
                 }
             }
         }
         context.pluginDispatcher.afterTestClass(pluginsClassContext)
     }
+
 
     private fun resolveTestInstanceLifecycle(classDesc: CorounitClassDescriptior): TestInstance.Lifecycle {
         val annotationLifecycle = classDesc.clazz.findAnnotation<TestInstance>()?.value
@@ -140,6 +138,58 @@ class ClassRunner(
                 }
             }
             context.pluginDispatcher.afterTestMethod(pluginsMethodContext, thr)
+        }
+    }
+
+    private suspend fun CoroutineScope.executeBeforeAllMethodIfPresent(
+            classContext: TestClassContextElement,
+            testInstance: Any
+    ) {
+        executeBeforeOrAfterAllMethodIfPresent(
+                classContext,
+                testInstance,
+                beforeAllMethod,
+                { methodContext -> context.pluginDispatcher.beforeBeforeAllMethod(methodContext) },
+                { pluginContext, thr -> context.pluginDispatcher.afterBeforeAllMethod(pluginContext, thr) }
+        )
+    }
+
+    private suspend fun CoroutineScope.executeAfterAllMethodIfPresent(
+            classContext: TestClassContextElement,
+            testInstance: Any
+    ) {
+        executeBeforeOrAfterAllMethodIfPresent(
+                classContext,
+                testInstance,
+                afterAllMethod,
+                { methodContext -> context.pluginDispatcher.beforeAfterAllMethod(methodContext) },
+                { pluginContext, thr -> context.pluginDispatcher.afterAfterAllMethod(pluginContext, thr) }
+        )
+    }
+
+    private suspend fun CoroutineScope.executeBeforeOrAfterAllMethodIfPresent(
+            classContext: TestClassContextElement,
+            testInstance: Any,
+            method: KFunction<*>?,
+            beforePluginCall: suspend (methodContext: CoroutineContext) -> CoroutineContext,
+            afterPluginCall: suspend (pluginContext: CoroutineContext, thr: Throwable?) -> Unit
+    ) {
+        method?.let {
+            val methodContext = classContext + TestMethodContextElement(it)
+            val pluginContext = beforePluginCall(methodContext)
+            launch(pluginContext) {
+                val throwable = try {
+                    it.invokeMethodOnTestInstance(testInstance)
+                    null
+                } catch (thr: Throwable) {
+                    thr
+                }
+                afterPluginCall(pluginContext, throwable)
+
+                if (null != throwable) {
+                    throw throwable
+                }
+            }
         }
     }
 

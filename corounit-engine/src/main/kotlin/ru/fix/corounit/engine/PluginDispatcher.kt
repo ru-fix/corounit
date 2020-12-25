@@ -97,6 +97,28 @@ class PluginDispatcher(execDesc: CorounitExecutionDescriptor) : CorounitPlugin {
         }
     }
 
+    override suspend fun beforeBeforeAllMethod(testMethodContext: CoroutineContext): CoroutineContext {
+        return dispatch(testMethodContext) { beforeBeforeAllMethod(it)}
+    }
+
+    override suspend fun afterBeforeAllMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+        dispatch(testMethodContext) {
+            afterBeforeAllMethod(it, thr)
+            it
+        }
+    }
+
+    override suspend fun beforeAfterAllMethod(testMethodContext: CoroutineContext): CoroutineContext {
+        return dispatch(testMethodContext) { beforeAfterAllMethod(it)}
+    }
+
+    override suspend fun afterAfterAllMethod(testMethodContext: CoroutineContext, thr: Throwable?) {
+        dispatch(testMethodContext) {
+            afterAfterAllMethod(it, thr)
+            it
+        }
+    }
+
     override suspend fun beforeTestMethod(testMethodContext: CoroutineContext): CoroutineContext {
         return dispatch(testMethodContext) { beforeTestMethod(it) }
     }
