@@ -3,6 +3,7 @@ package ru.fix.corounit.engine
 import io.kotlintest.shouldBe
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
 
@@ -40,38 +41,6 @@ class PluginInvocationTest {
 
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     class TestClassWithoutBeforeAndAfterMethodsLifecyclePerClass {
-        @Test
-        suspend fun test() { }
-    }
-
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    class TestClassWithErrorInBeforeAndAfterAllMethodsLifecyclePerClass {
-
-        suspend fun beforeAll() {
-            error("error occurred in beforeAll")
-        }
-
-        suspend fun afterAll() {
-            error("error occurred in afterAll")
-        }
-
-        @Test
-        suspend fun test() { }
-    }
-
-    @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-    class TestClassWithErrorInBeforeAndAfterAllMethodsLifecyclePerMethod {
-
-        companion object {
-            suspend fun beforeAll() {
-                error("error occurred in beforeAll")
-            }
-
-            suspend fun afterAll() {
-                error("error occurred in afterAll")
-            }
-        }
-
         @Test
         suspend fun test() { }
     }
@@ -124,29 +93,157 @@ class PluginInvocationTest {
         )
     }
 
-    @Test
-    fun `plugin afterBeforeAllMethod is invoked if before or after all methods have error (per class lifecycle)`() {
-        PluginForTestInvocation.reset()
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class TestClassWithErrorInBeforeAllMethodLifecyclePerClass {
 
-        engineEmulator.emulateTestClass<TestClassWithErrorInBeforeAndAfterAllMethodsLifecyclePerClass>()
+        companion object {
+            val enabledFailing = AtomicBoolean(false)
+        }
 
-        assertPluginInvocation()
+        suspend fun beforeAll() {
+            if (enabledFailing.get()) {
+                error("error occurred in beforeAll")
+            }
+        }
+
+        suspend fun afterAll() { }
+
+        @Test
+        suspend fun test() { }
     }
 
     @Test
-    fun `plugin afterAfterAllMethod is invoked if before or after all methods have error (per method lifecycle)`() {
+    fun `plugin afterBeforeAllMethod is invoked if before method has error (per class lifecycle)`() {
         PluginForTestInvocation.reset()
+        TestClassWithErrorInBeforeAllMethodLifecyclePerClass.enabledFailing.set(true)
 
-        engineEmulator.emulateTestClass<TestClassWithErrorInBeforeAndAfterAllMethodsLifecyclePerMethod>()
+        engineEmulator.emulateTestClass<TestClassWithErrorInBeforeAllMethodLifecyclePerClass>()
 
-        assertPluginInvocation()
+        assertPluginInvocation(
+                beforeBeforeAllMethodInvocationCount = 1,
+                afterBeforeAllMethodInvocationCount = 1,
+                beforeAfterAllMethodInvocationCount = 0,
+                afterAfterAllMethodInvocationCount = 0,
+                beforeTestMethodInvocationCount = 0,
+                afterTestMethodInvocationCount = 0
+        )
+    }
+
+    @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+    class TestClassWithErrorInBeforeAllMethodLifecyclePerMethod {
+
+        companion object {
+            val enabledFailing = AtomicBoolean(false)
+
+            suspend fun beforeAll() {
+                if (enabledFailing.get()) {
+                    error("error occurred in beforeAll")
+                }
+            }
+
+            suspend fun afterAll() { }
+        }
+
+        @Test
+        suspend fun test() { }
+    }
+
+    @Test
+    fun `plugin afterBeforeAllMethod is invoked if before method has error (per method lifecycle)`() {
+        PluginForTestInvocation.reset()
+        TestClassWithErrorInBeforeAllMethodLifecyclePerMethod.enabledFailing.set(true)
+
+        engineEmulator.emulateTestClass<TestClassWithErrorInBeforeAllMethodLifecyclePerMethod>()
+
+        assertPluginInvocation(
+                beforeBeforeAllMethodInvocationCount = 1,
+                afterBeforeAllMethodInvocationCount = 1,
+                beforeAfterAllMethodInvocationCount = 0,
+                afterAfterAllMethodInvocationCount = 0,
+                beforeTestMethodInvocationCount = 0,
+                afterTestMethodInvocationCount = 0
+        )
+    }
+
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class TestClassWithErrorInAfterAllMethodLifecyclePerClass {
+
+        companion object {
+            val enabledFailing = AtomicBoolean(false)
+        }
+
+        suspend fun beforeAll() { }
+
+        suspend fun afterAll() {
+            if (enabledFailing.get()) {
+                error("error occurred in afterAll")
+            }
+        }
+
+        @Test
+        suspend fun test() { }
+    }
+
+    @Test
+    fun `plugin afterAfterAllMethod is invoked if afterAll method has error (per class lifecycle)`() {
+        PluginForTestInvocation.reset()
+        TestClassWithErrorInAfterAllMethodLifecyclePerClass.enabledFailing.set(true)
+
+        engineEmulator.emulateTestClass<TestClassWithErrorInAfterAllMethodLifecyclePerClass>()
+
+        assertPluginInvocation(
+                beforeBeforeAllMethodInvocationCount = 1,
+                afterBeforeAllMethodInvocationCount = 1,
+                beforeAfterAllMethodInvocationCount = 1,
+                afterAfterAllMethodInvocationCount = 1,
+                beforeTestMethodInvocationCount = 1,
+                afterTestMethodInvocationCount = 1
+        )
+    }
+
+    @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+    class TestClassWithErrorInAfterAllMethodLifecyclePerMethod {
+
+        companion object {
+            val enabledFailing = AtomicBoolean(false)
+
+            suspend fun beforeAll() { }
+
+            suspend fun afterAll() {
+                if (enabledFailing.get()) {
+                    error("error occurred in afterAll")
+                }
+            }
+        }
+
+        @Test
+        suspend fun test() { }
+    }
+
+    @Test
+    fun `plugin afterAfterAllMethod is invoked if afterAll method has error (per method lifecycle)`() {
+        PluginForTestInvocation.reset()
+        TestClassWithErrorInAfterAllMethodLifecyclePerMethod.enabledFailing.set(true)
+
+        engineEmulator.emulateTestClass<TestClassWithErrorInAfterAllMethodLifecyclePerMethod>()
+
+        assertPluginInvocation(
+                beforeBeforeAllMethodInvocationCount = 1,
+                afterBeforeAllMethodInvocationCount = 1,
+                beforeAfterAllMethodInvocationCount = 1,
+                afterAfterAllMethodInvocationCount = 1,
+                beforeTestMethodInvocationCount = 1,
+                afterTestMethodInvocationCount = 1
+        )
     }
 
     private fun assertPluginInvocation(
             beforeBeforeAllMethodInvocationCount: Int = 1,
             afterBeforeAllMethodInvocationCount: Int = 1,
             beforeAfterAllMethodInvocationCount: Int = 1,
-            afterAfterAllMethodInvocationCount: Int = 1
+            afterAfterAllMethodInvocationCount: Int = 1,
+            beforeTestMethodInvocationCount: Int = 1,
+            afterTestMethodInvocationCount: Int = 1
     ) {
         PluginForTestInvocation.beforeBeforeAllMethodInvocationCount.get().shouldBe(beforeBeforeAllMethodInvocationCount)
         PluginForTestInvocation.afterBeforeAllMethodInvocationCount.get().shouldBe(afterBeforeAllMethodInvocationCount)
@@ -160,8 +257,8 @@ class PluginInvocationTest {
         PluginForTestInvocation.beforeAllTestClassesInvocationCount.get().shouldBe(1)
         PluginForTestInvocation.afterAllTestClassesInvocationCount.get().shouldBe(1)
 
-        PluginForTestInvocation.beforeTestMethodInvocationCount.get().shouldBe(1)
-        PluginForTestInvocation.afterTestMethodInvocationCount.get().shouldBe(1)
+        PluginForTestInvocation.beforeTestMethodInvocationCount.get().shouldBe(beforeTestMethodInvocationCount)
+        PluginForTestInvocation.afterTestMethodInvocationCount.get().shouldBe(afterTestMethodInvocationCount)
     }
 
 }
