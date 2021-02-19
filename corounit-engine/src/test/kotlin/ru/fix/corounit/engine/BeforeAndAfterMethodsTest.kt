@@ -221,13 +221,13 @@ class BeforeAndAfterMethodsTest {
 
         @BeforeAll
         suspend fun beforeAll() {
-            beforeAllInvoked()
-            methodInvokeQueue.push("beforeAll")
             /**
              * delay is for emulation case when beforeAll method is take a long time
              * and test methods must not be invoked before it completes
              */
             delay(5000)
+            beforeAllInvoked()
+            methodInvokeQueue.push("beforeAll")
         }
 
         @AfterAll
