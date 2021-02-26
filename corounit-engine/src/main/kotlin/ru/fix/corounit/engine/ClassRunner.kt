@@ -3,6 +3,7 @@ package ru.fix.corounit.engine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.junit.jupiter.api.*
 import java.lang.reflect.InvocationTargetException
@@ -141,7 +142,7 @@ class ClassRunner(
         }
     }
 
-    private suspend fun CoroutineScope.executeBeforeAllMethodIfPresent(
+    private suspend fun executeBeforeAllMethodIfPresent(
             classContext: TestClassContextElement,
             testInstance: Any
     ) {
@@ -154,7 +155,7 @@ class ClassRunner(
         )
     }
 
-    private suspend fun CoroutineScope.executeAfterAllMethodIfPresent(
+    private suspend fun executeAfterAllMethodIfPresent(
             classContext: TestClassContextElement,
             testInstance: Any
     ) {
@@ -167,7 +168,7 @@ class ClassRunner(
         )
     }
 
-    private suspend fun CoroutineScope.executeBeforeOrAfterAllMethodIfPresent(
+    private suspend fun executeBeforeOrAfterAllMethodIfPresent(
             classContext: TestClassContextElement,
             testInstance: Any,
             method: KFunction<*>?,
@@ -177,7 +178,7 @@ class ClassRunner(
         method?.let {
             val methodContext = classContext + TestMethodContextElement(it)
             val pluginContext = beforePluginCall(methodContext)
-            launch(pluginContext) {
+            withContext(pluginContext) {
                 val throwable = try {
                     it.invokeMethodOnTestInstance(testInstance)
                     null
