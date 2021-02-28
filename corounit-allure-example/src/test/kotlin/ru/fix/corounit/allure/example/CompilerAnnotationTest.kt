@@ -26,6 +26,8 @@ class MMMyStep() {
     }
 }
 
+//TODO: https://bnorm.medium.com/writing-your-second-kotlin-compiler-plugin-part-1-project-setup-7b05c7d93f6c
+
 class CompilerAnnotationTest {
     @Test
     fun `do work`() = runBlocking {
