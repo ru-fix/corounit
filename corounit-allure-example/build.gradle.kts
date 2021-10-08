@@ -3,6 +3,7 @@ plugins {
     java
     kotlin("jvm")
     id("io.qameta.allure") version Vers.allure_plugin
+    id("io.qameta.allure-adapter") version Vers.allure_plugin
 
     id("io.freefair.aspectj.base") version Vers.freefair_aspectj
     id("io.freefair.aspectj.post-compile-weaving") version Vers.freefair_aspectj
@@ -10,9 +11,10 @@ plugins {
 
 
 allure{
-    version = Vers.allure_cli
-    autoconfigure = true
-    aspectjweaver = true
+    adapter{
+        version.set(Vers.allure_cli)
+    }
+
 }
 
 aspectj{

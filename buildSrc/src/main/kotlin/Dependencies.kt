@@ -1,22 +1,22 @@
 object Vers {
     //Plugins
-    const val gradle_release_plugin = "1.3.16"
-    const val dokkav = "0.9.18"
+    const val gradle_release_plugin = "1.4.3"
+    const val dokkav = "1.4.30"
     const val asciidoctor = "1.5.9.2"
 
     //Dependencies
-    const val kotlin = "1.3.70"
-    const val kotlin_coroutines = "1.3.5"
+    const val kotlin = "1.5.21"
+    const val kotlin_coroutines = "1.5.2"
     const val junit = "5.6.0"
 
     const val log4j =  "2.12.0"
 
-    const val allure_plugin = "2.8.1"
-    const val allure_cli = "2.13.1"
-    const val allure_junit5 = "2.13.1"
+    const val allure_plugin = "2.9.4"
+    const val allure_cli = "2.15.0"
+    const val allure_junit5 = "2.15.0"
 
-    const val aspectj = "1.9.5"
-    const val freefair_aspectj = "5.0.1"
+    const val aspectj = "1.9.7"
+    const val freefair_aspectj = "6.2.0"
 }
 object Libs {
     //Plugins
