@@ -8,7 +8,12 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 
 @AutoService(CommandLineProcessor::class)
-class CommandLineProcessor : CommandLineProcessor {
+class CorounitCommandLineProcessor : CommandLineProcessor {
+    companion object {
+        private const val OPTION_ALLURE_ANNOTATION = "corounitAllureAnnotation"
+        val ARG_ALLURE_ANNOTATION = CompilerConfigurationKey<String>(OPTION_ALLURE_ANNOTATION)
+    }
+
     /**
      * Just needs to be consistent with the key for DebugLogGradleSubplugin#getCompilerPluginId
      */
@@ -21,9 +26,9 @@ class CommandLineProcessor : CommandLineProcessor {
     override val pluginOptions: Collection<CliOption> = listOf(
             CliOption(
                     optionName = "corounitAllureAnnotation", valueDescription = "<fqname>",
-                    description = "fully qualified name of the annotation(s) to use as debug-log",
+                    description = "fully qualified name of the allure step annotation",
                     required = true,
-                    allowMultipleOccurrences = true
+                    allowMultipleOccurrences = false
             )
     )
 
@@ -32,9 +37,7 @@ class CommandLineProcessor : CommandLineProcessor {
             value: String,
             configuration: CompilerConfiguration
     ) = when (option.optionName) {
-        "corounitAllureAnnotation" -> configuration.appendList(KEY_ANNOTATIONS, value)
+        OPTION_ALLURE_ANNOTATION -> configuration.put(ARG_ALLURE_ANNOTATION, value)
         else -> error("Unexpected config option ${option.optionName}")
     }
 }
-
-val KEY_ANNOTATIONS = CompilerConfigurationKey<List<String>>("CorounitAllure annotations")

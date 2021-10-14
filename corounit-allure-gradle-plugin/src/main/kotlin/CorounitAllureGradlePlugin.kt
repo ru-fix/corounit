@@ -14,8 +14,8 @@ class CorounitAllureGradlePlugin : KotlinCompilerPluginSupportPlugin {
         Properties().apply { load(stream) }["ru.fix.corounit.allure.gradle.plugin.version"] as String
     }
 
-    override fun apply(project: Project) {
-        project.extensions.create(
+    override fun apply(target: Project) {
+        target.extensions.create(
                 "corounitAllure",
                 CorounitAllureExtension::class.java
         )

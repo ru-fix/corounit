@@ -12,8 +12,8 @@ dependencies {
 
     api(Libs.kotlinx_coroutines_core)
 
-    api(Libs.junit_engine)
-    api(Libs.junit_api)
+    api(Libs.junit_jupiter_engine)
+    api(Libs.junit_jupiter_api)
 
     api(Libs.mu_kotlin_logging)
     implementation(Libs.log4j_core)

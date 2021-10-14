@@ -19,8 +19,7 @@ dependencies {
     implementation(Libs.slf4j_over_log4j)
 
     testImplementation(Libs.kotlin_test)
-    testImplementation(Libs.junit_engine)
-    testImplementation(Libs.junit_api)
-    testImplementation(Libs.junit_params)
+    testImplementation(Libs.junit_jupiter_engine)
+    testImplementation(Libs.junit_jupiter_api)
 }
 

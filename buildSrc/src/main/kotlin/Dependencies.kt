@@ -1,19 +1,20 @@
 object Vers {
     //Plugins
-    const val gradle_release_plugin = "1.3.16"
-    const val dokkav = "0.9.18"
+    const val gradle_release_plugin = "1.4.3"
+    const val dokkav = "1.4.30"
     const val asciidoctor = "1.5.9.2"
 
+    const val allure_plugin = "2.9.6"
+    const val allure_cli = "2.15.0"
+
     //Dependencies
-    const val kotlin = "1.4.10"
-    const val kotlin_gralde = "1.3.72"
-    const val kotlin_coroutines = "1.3.9"
-    const val junit = "5.6.0"
+    const val kotlin = "1.5.31"
+    const val kotlin_gradle = "1.5.21"
+    const val kotlin_coroutines = "1.5.2"
 
-    const val log4j =  "2.12.0"
-
-    const val allure_plugin = "2.8.1"
-    const val allure_cli = "2.13.1"
+    const val junit_jupiter = "5.6.2"
+    const val log4j = "2.13.2"
+    const val slf4j = "1.7.30"
     const val allure_junit5 = "2.13.1"
 
     const val aspectj = "1.9.5"
@@ -29,9 +30,9 @@ object Libs {
 
     //Dependencies
     const val kotlin_stdlib = "org.jetbrains.kotlin:kotlin-stdlib:${Vers.kotlin}"
-    const val kotlin_gradle_stdlib = "org.jetbrains.kotlin:kotlin-stdlib:${Vers.kotlin_gralde}"
+    const val kotlin_gradle_stdlib = "org.jetbrains.kotlin:kotlin-stdlib:${Vers.kotlin_gradle}"
     const val kotlin_jdk8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Vers.kotlin}"
-    const val kotlin_gradle_jdk8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Vers.kotlin_gralde}"
+    const val kotlin_gradle_jdk8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Vers.kotlin_gradle}"
     const val kotlin_reflect = "org.jetbrains.kotlin:kotlin-reflect:${Vers.kotlin}"
     const val kotlinx_coroutines_core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Vers.kotlin_coroutines}"
     const val kotlin_compiler_embeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:${Vers.kotlin}"
@@ -51,11 +52,14 @@ object Libs {
     const val mockk = "io.mockk:mockk:1.9.2"
 
     // Tests
-    const val junit_api = "org.junit.jupiter:junit-jupiter-api:${Vers.junit}"
-    const val junit_params = "org.junit.jupiter:junit-jupiter-params:${Vers.junit}"
-    const val junit_engine = "org.junit.jupiter:junit-jupiter-engine:${Vers.junit}"
-    const val junit_launcher = "org.junit.platform:junit-platform-launcher:1.6.2"
+    const val junit_jupiter_engine = "org.junit.jupiter:junit-jupiter-engine:${Vers.junit_jupiter}"
+    const val junit_jupiter_api = "org.junit.jupiter:junit-jupiter-api:${Vers.junit_jupiter}"
 
+    const val kotest_assertions = "io.kotest:kotest-assertions-core-jvm:4.6.3"
+
+    const val slf4j_api = "org.slf4j:slf4j-api:${Vers.slf4j}"
+    const val log4j_slf4j_impl = "org.apache.logging.log4j:log4j-slf4j-impl:${Vers.log4j}"
+    const val log4j_kotlin = "org.apache.logging.log4j:log4j-api-kotlin:1.0.0"
 
 
     const val kotlin_test = "io.kotlintest:kotlintest-runner-junit5:3.4.2"

@@ -1,13 +1,12 @@
 package ru.fix.corounit.allure.kotlin.plugin
 
 import com.google.auto.service.AutoService
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.extensions.PreprocessedVirtualFileFactoryExtension
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
 
 @AutoService(ComponentRegistrar::class)
 class CorounitComponentRegistrar : ComponentRegistrar {
@@ -15,24 +14,15 @@ class CorounitComponentRegistrar : ComponentRegistrar {
             project: MockProject,
             configuration: CompilerConfiguration
     ) {
-//    ClassBuilderInterceptorExtension.registerExtension(
-//        project,
-//        ClassGenerationInterceptor(
-//            annotations = configuration[KEY_ANNOTATIONS]
-//                ?: error("CorounitAllure plugin requires at least one annotation class option passed to it")
-//        )
-//    )
 
-        Files.writeString(Paths.get("preprocessing-corounit"),
-                "register",
-        StandardOpenOption.APPEND, StandardOpenOption.CREATE)
+        val messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
+        val allureAnnotation = configuration.get(CorounitCommandLineProcessor.ARG_ALLURE_ANNOTATION, "invalid.default.Step")
 
+//        Files.writeString(Paths.get("preprocessing-corounit"),
+//                "register",
+//        StandardOpenOption.APPEND, StandardOpenOption.CREATE)
 
-        PreprocessedVirtualFileFactoryExtension.registerExtension(
-                project,
-                CorounitPreprocessedVirtualFileFactoryExtension()
-                )
-        // TODO: IrGenerationExtension.registerExtension for Kotlin Native :)
+        IrGenerationExtension.registerExtension(project, CorounitIrGenerationExtension(messageCollector, allureAnnotation))
     }
 }
 
