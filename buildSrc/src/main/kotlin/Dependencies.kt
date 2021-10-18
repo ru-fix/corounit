@@ -1,7 +1,7 @@
 object Vers {
     //Plugins
     const val gradle_release_plugin = "1.4.3"
-    const val dokkav = "1.4.30"
+    const val dokkav = "1.5.31"
     const val asciidoctor = "1.5.9.2"
 
     //Dependencies
