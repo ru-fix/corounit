@@ -6,6 +6,7 @@ import io.kotlintest.matchers.collections.shouldBeSingleton
 import io.kotlintest.matchers.string.shouldContain
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 
@@ -44,6 +45,12 @@ class StepClassWithoutAnnotation{
     }
 }
 
+@Disabled("""
+    Kotlin 1.5 is not supported by aspectj.
+    So compile time aspect injection via aspectj post compilation weaving
+    methods marked with [ru.fix.corounit.allure.Step] annotation
+    currently not supported
+""")
 class AspectjPostCompileWaveringTest {
 
     @Test

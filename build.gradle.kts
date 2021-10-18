@@ -9,7 +9,6 @@ import kotlin.reflect.KProperty
 
 buildscript {
     repositories {
-        jcenter()
         mavenCentral()
         mavenLocal()
     }
@@ -80,7 +79,6 @@ subprojects {
 
     repositories {
         mavenLocal()
-        jcenter()
         mavenCentral()
         if (!repositoryUrl.isNullOrEmpty()) {
             maven(url = repositoryUrl.toString())

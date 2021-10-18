@@ -18,10 +18,14 @@ class BookFlightTest {
     val airport = createStepClassInstance<AirportSteps>()
 
     /**
-     * Uses compile time aspect injection via aspectj post compilation weaving
+     * Kotlin 1.5 is not supported by aspectj.
+     * So compile time aspect injection via aspectj post compilation weaving
      * methods marked with [ru.fix.corounit.allure.Step] annotation
+     * currently not supported
+     *
+     * val security = SecuritySteps()
      */
-    val security = SecuritySteps()
+    val security = createStepClassInstance<SecuritySteps>()
 
     @Test
     suspend fun `person books a flight`() {

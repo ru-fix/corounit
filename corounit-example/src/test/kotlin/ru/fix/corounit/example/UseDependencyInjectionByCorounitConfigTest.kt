@@ -16,7 +16,7 @@ class UseDependencyInjectionByCorounitConfigTest {
     }
 
     @Test
-    open suspend fun `corounit config used as a dependency injection for this test class`(){
+    suspend fun `corounit config used as a dependency injection for this test class`(){
         CorounitConfig.beforeAllInvoked.get().shouldBeTrue()
         data.shouldBe("injected data")
     }

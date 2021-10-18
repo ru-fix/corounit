@@ -5,21 +5,28 @@ plugins {
     id("io.qameta.allure") version Vers.allure_plugin
     id("io.qameta.allure-adapter") version Vers.allure_plugin
 
-    id("io.freefair.aspectj.base") version Vers.freefair_aspectj
-    id("io.freefair.aspectj.post-compile-weaving") version Vers.freefair_aspectj
+//    id("io.freefair.aspectj.base") version Vers.freefair_aspectj
+//    id("io.freefair.aspectj.post-compile-weaving") version Vers.freefair_aspectj
 }
 
 
 allure{
     adapter{
         version.set(Vers.allure_cli)
+        allureJavaVersion.set(Vers.allure_java)
+
+        frameworks{
+            junit5{
+                enabled.set(false)
+            }
+        }
     }
 
 }
 
-aspectj{
-    version.set(Vers.aspectj)
-}
+//aspectj{
+//    version.set(Vers.aspectj)
+//}
 
 dependencies {
 
@@ -35,14 +42,20 @@ dependencies {
 
     api(Libs.mu_kotlin_logging)
 
-    aspect(project(Projs.`corounit-allure`.asDependency))
+/*
+Kotlin 1.5 is not supported by aspectj.
+So compile time aspect injection via aspectj post compilation weaving
+methods marked with [ru.fix.corounit.allure.Step] annotation
+currently not supported
+ */
+//    aspect(project(Projs.`corounit-allure`.asDependency))
 
     implementation(Libs.log4j_core)
     implementation(Libs.slf4j_over_log4j)
 
     testImplementation(Libs.kotlin_test)
-    testAspect(project(Projs.`corounit-allure`.asDependency))
-    testImplementation(Libs.aspect_weaver)
+//    testAspect(project(Projs.`corounit-allure`.asDependency))
+//    testImplementation(Libs.aspect_weaver)
 
 
 }

@@ -3,9 +3,9 @@ package ru.fix.corounit.allure.example.concurrent
 import java.nio.file.Files
 import java.nio.file.Paths
 
-private fun testClassName(suite: Int) = "ConcurrentTest" + suite.toString().toUpperCase().padStart(2, '0')
+private fun testClassName(suite: Int) = "ConcurrentTest" + suite.toString().uppercase().padStart(2, '0')
 private fun template(suite: Int): String {
-    fun testNum(suite: Int, test: Int) = (20 * (suite-1) + test).toString().toUpperCase().padStart(4, '0')
+    fun testNum(suite: Int, test: Int) = (20 * (suite-1) + test).toString().uppercase().padStart(4, '0')
 
 
     return """

@@ -7,10 +7,10 @@ import ru.fix.corounit.allure.invoke
 
 private val log = KotlinLogging.logger { }
 
-class SecuritySteps {
+open class SecuritySteps {
 
     @Step
-    suspend fun `check person`(person: String) {
+    open suspend fun `check person`(person: String) {
         "ensure that person is a law abiding citizen" {
             person.shouldNotBeBlank()
         }

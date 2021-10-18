@@ -11,9 +11,9 @@ object Vers {
 
     const val log4j =  "2.12.0"
 
-    const val allure_plugin = "2.9.4"
+    const val allure_plugin = "2.9.6"
     const val allure_cli = "2.15.0"
-    const val allure_junit5 = "2.15.0"
+    const val allure_java = "2.15.0"
 
     const val aspectj = "1.9.7"
     const val freefair_aspectj = "6.2.0"
@@ -47,16 +47,15 @@ object Libs {
     const val junit_api = "org.junit.jupiter:junit-jupiter-api:${Vers.junit}"
     const val junit_params = "org.junit.jupiter:junit-jupiter-params:${Vers.junit}"
     const val junit_engine = "org.junit.jupiter:junit-jupiter-engine:${Vers.junit}"
-    const val junit_launcher = "org.junit.platform:junit-platform-launcher:1.6.2"
 
 
 
     const val kotlin_test = "io.kotlintest:kotlintest-runner-junit5:3.4.2"
 
-    const val allure_model = "io.qameta.allure:allure-model:${Vers.allure_junit5}"
-    const val allure_java_commons = "io.qameta.allure:allure-java-commons:${Vers.allure_junit5}"
+    const val allure_model = "io.qameta.allure:allure-model:${Vers.allure_java}"
+    const val allure_java_commons = "io.qameta.allure:allure-java-commons:${Vers.allure_java}"
 
-    const val bytebuddy = "net.bytebuddy:byte-buddy:1.10.6"
+    const val bytebuddy = "net.bytebuddy:byte-buddy:1.11.20"
 
 
 }
