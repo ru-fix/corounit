@@ -3,6 +3,7 @@ package ru.fix.corounit.engine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.junit.jupiter.api.*
@@ -49,7 +50,7 @@ class ClassRunner(
                 .firstOrNull { it.parameters.size == 1 }
     }
 
-    suspend fun executeClass() {
+    suspend fun executeClass(methodsRunsSemaphore: Semaphore?) {
         val classContext = TestClassContextElement(classDesc.clazz)
         val pluginsClassContext = context.pluginDispatcher.beforeTestClass(classContext)
 
@@ -62,7 +63,9 @@ class ClassRunner(
 
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
-                            executeMethod(classContext, methodDesc, testInstance)
+                            methodsRunsSemaphore.withPermitIfNotNull {
+                                executeMethod(classContext, methodDesc, testInstance)
+                            }
                         }
                     }
 
@@ -76,7 +79,9 @@ class ClassRunner(
                     supervisorScope {
                         for (methodDesc in classDesc.methodDescriptors) {
                             val testInstance = context.pluginDispatcher.createTestClassInstance(classDesc.clazz)
-                            executeMethod(classContext, methodDesc, testInstance)
+                            methodsRunsSemaphore.withPermitIfNotNull {
+                                executeMethod(classContext, methodDesc, testInstance)
+                            }
                         }
                     }
 

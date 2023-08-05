@@ -5,6 +5,15 @@ import org.junit.platform.engine.ConfigurationParameters
 import java.util.concurrent.ForkJoinPool
 
 class Configuration(configurationParameters: ConfigurationParameters) {
+
+    val concurrentTestClassesLimit = configurationParameters.get("corounit.execution.concurrent.test.classes.limit")
+        .map { it?.toInt() }
+        .orElse(null)
+
+    val concurrentTestMethodsLimit = configurationParameters.get("corounit.execution.concurrent.test.methods.limit")
+        .map { it?.toInt() }
+        .orElse(null)
+
     val parallelism = configurationParameters.get("corounit.execution.parallelism")
             .map { it?.toInt() }
             .orElse(Math.max(ForkJoinPool.getCommonPoolParallelism(), 2))!!
