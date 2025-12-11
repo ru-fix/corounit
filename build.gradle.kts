@@ -9,8 +9,10 @@ import kotlin.reflect.KProperty
 
 buildscript {
     repositories {
+        jcenter()
         mavenCentral()
         mavenLocal()
+        maven(url = "https://repo.gradle.org/artifactory/jcenter-backup/")
     }
     dependencies {
         classpath(kotlin("gradle-plugin", version = Vers.kotlin))
@@ -83,6 +85,8 @@ subprojects {
         if (!repositoryUrl.isNullOrEmpty()) {
             maven(url = repositoryUrl.toString())
         }
+        jcenter()
+        maven(url = "https://repo.gradle.org/artifactory/jcenter-backup/")
     }
 
     jacoco {
