@@ -95,6 +95,8 @@ You can use default `junit-platform.properties` file in test resources to specif
       
 ```properties
 # junit-platform.properties
+corounit.execution.concurrent.test.classes.limit=5
+corounit.execution.concurrent.test.methods.limit=10
 corounit.execution.parallelism=4
 corounit.testinstance.lifecycle.default=per_class
 ```
@@ -376,6 +378,10 @@ class TestClass{
 ## Corounit Properties
 You can add corounit properties within default JUnit property file at `src/test/resources/junit-platform.properties`:
 
+* `corounit.execution.concurrent.test.classes.limit=null`
+ Max number of running concurrently test classes
+* `corounit.execution.concurrent.test.methods.limit=null`
+ Max number of running concurrently test methods
 * `corounit.execution.parallelism=4` 
  How many threads corounite engine will use to execute tests.
 * `corounit.testinstance.lifecycle.default=per_class` 
