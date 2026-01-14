@@ -12,7 +12,7 @@ inline fun <reified T: Any> createStepClassInstance(vararg args: Any?): T =
 fun <T: Any> createStepClassInstance(clazz: KClass<T>, vararg args: Any?): T =
         AllureAspect.newAspectedInstanceViaSubtyping(clazz, *args)
 
-suspend operator fun String.invoke(stepBody: suspend CoroutineScope.()->Unit) {
+suspend operator fun <T> String.invoke(stepBody: suspend CoroutineScope.()->T) {
     AllureStep.fromCurrentCoroutineContext().step(this, stepBody)
 }
 
